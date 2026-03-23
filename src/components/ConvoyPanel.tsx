@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, Copy, Plus, LogIn, Navigation, Crown, Circle, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users, Copy, Plus, LogIn, Navigation, Crown, Circle, LogOut, ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -14,9 +14,16 @@ interface Driver {
   heading?: number | null;
 }
 
+interface Destination {
+  lat: number;
+  lng: number;
+  label?: string | null;
+}
+
 interface ConvoyPanelProps {
   drivers: Driver[];
   convoyCode: string | null;
+  destination?: Destination | null;
   onCreateConvoy: (name: string) => void;
   onJoinConvoy: (code: string, name: string) => void;
   onLeaveConvoy?: () => void;
@@ -36,7 +43,7 @@ const formatDistance = (km: number): string => {
   return `${km.toFixed(1)} km`;
 };
 
-const ConvoyPanel = ({ drivers, convoyCode, onCreateConvoy, onJoinConvoy, onLeaveConvoy }: ConvoyPanelProps) => {
+const ConvoyPanel = ({ drivers, convoyCode, destination, onCreateConvoy, onJoinConvoy, onLeaveConvoy }: ConvoyPanelProps) => {
   const [name, setName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [mode, setMode] = useState<"idle" | "create" | "join">("idle");
@@ -105,8 +112,11 @@ const ConvoyPanel = ({ drivers, convoyCode, onCreateConvoy, onJoinConvoy, onLeav
             <div className="space-y-2">
               {drivers.map((driver) => {
                 const leader = drivers.find((d) => d.isLeader);
-                const dist = leader && !driver.isLeader
+                const distToLeader = leader && !driver.isLeader
                   ? formatDistance(haversineDistance(driver.lat, driver.lng, leader.lat, leader.lng))
+                  : null;
+                const distToDest = destination
+                  ? formatDistance(haversineDistance(driver.lat, driver.lng, destination.lat, destination.lng))
                   : null;
                 return (
                   <div
@@ -118,9 +128,16 @@ const ConvoyPanel = ({ drivers, convoyCode, onCreateConvoy, onJoinConvoy, onLeav
                       style={{ backgroundColor: driver.color }}
                     />
                     <span className="font-display text-sm text-foreground flex-1">{driver.name}</span>
-                    {dist && (
-                      <span className="font-display text-[10px] text-muted-foreground">{dist}</span>
-                    )}
+                    <div className="flex items-center gap-2 shrink-0">
+                      {distToDest && (
+                        <span className="font-display text-[10px] text-primary flex items-center gap-0.5" title="Distance to destination">
+                          <MapPin className="w-2.5 h-2.5" />{distToDest}
+                        </span>
+                      )}
+                      {distToLeader && (
+                        <span className="font-display text-[10px] text-muted-foreground">{distToLeader}</span>
+                      )}
+                    </div>
                     {driver.isLeader ? (
                       <Crown className="w-3.5 h-3.5 text-convoy-amber" />
                     ) : (
