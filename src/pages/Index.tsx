@@ -4,10 +4,12 @@ import ConvoyMap from "@/components/ConvoyMap";
 import ConvoyChat from "@/components/ConvoyChat";
 import DestinationSearch from "@/components/DestinationSearch";
 import ConvoyPanel from "@/components/ConvoyPanel";
+import NavigationPanel, { type RouteInfo } from "@/components/NavigationPanel";
 import { toast } from "sonner";
 import { Crosshair } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConvoy } from "@/hooks/useConvoy";
+import { fetchRoute, type RouteGeometry } from "@/lib/routing";
 
 const DEFAULT_CENTER: [number, number] = [34.0522, -118.2437]; // LA
 
@@ -15,6 +17,9 @@ const Index = () => {
   const [center, setCenter] = useState<[number, number]>(DEFAULT_CENTER);
   const hasSetInitialCenter = useRef(false);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
+  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][] | null>(null);
+  const [routeLoading, setRouteLoading] = useState(false);
 
   const {
     convoyCode,
@@ -55,12 +60,44 @@ const Index = () => {
     }
   }, []);
 
+  // Fetch route when destination changes (debounced to avoid spamming OSRM)
+  const lastRouteFetchRef = useRef(0);
+  useEffect(() => {
+    if (!destination) {
+      setRouteInfo(null);
+      setRouteCoordinates(null);
+      return;
+    }
+
+    const self = drivers.find((d) => d.id === sessionId);
+    if (!self) return;
+
+    // Throttle: re-fetch at most every 15s for position changes, instant for new destination
+    const now = Date.now();
+    const timerId = setTimeout(() => {
+      if (Date.now() - lastRouteFetchRef.current < 10000) return;
+      lastRouteFetchRef.current = Date.now();
+      setRouteLoading(true);
+      fetchRoute(self.lat, self.lng, destination.lat, destination.lng).then((result) => {
+        setRouteLoading(false);
+        if (result) {
+          setRouteInfo(result.info);
+          setRouteCoordinates(result.coordinates);
+        }
+      });
+    }, lastRouteFetchRef.current === 0 ? 0 : 10000);
+
+    return () => clearTimeout(timerId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [destination, sessionId]);
+
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">
       <ConvoyMap
         drivers={drivers}
         center={center}
         destination={destination}
+        routeCoordinates={routeCoordinates}
         isLeader={isLeader}
         onMapReady={(map) => { mapInstanceRef.current = map; }}
         onMapClick={isLeader ? handleSetDestination : undefined}
@@ -95,7 +132,10 @@ const Index = () => {
         />
       )}
 
-      {/* Center on me button */}
+      {/* Navigation panel */}
+      {convoyCode && destination && (
+        <NavigationPanel route={routeInfo} loading={routeLoading} />
+      )}
       {convoyCode && (
         <Button
           size="icon"

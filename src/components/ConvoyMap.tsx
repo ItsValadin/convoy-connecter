@@ -23,6 +23,7 @@ interface ConvoyMapProps {
   drivers: Driver[];
   center: [number, number];
   destination?: Destination | null;
+  routeCoordinates?: [number, number][] | null;
   isLeader?: boolean;
   onMapReady?: (map: L.Map) => void;
   onMapClick?: (lat: number, lng: number) => void;
@@ -77,11 +78,12 @@ const createDestinationIcon = () => {
   });
 };
 
-const ConvoyMap = ({ drivers, center, destination, isLeader, onMapReady, onMapClick }: ConvoyMapProps) => {
+const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, onMapReady, onMapClick }: ConvoyMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
   const polylineRef = useRef<L.Polyline | null>(null);
+  const routePolylineRef = useRef<L.Polyline | null>(null);
   const destinationMarkerRef = useRef<L.Marker | null>(null);
   const onMapClickRef = useRef(onMapClick);
   onMapClickRef.current = onMapClick;
@@ -174,6 +176,25 @@ const ConvoyMap = ({ drivers, center, destination, isLeader, onMapReady, onMapCl
         .addTo(mapRef.current);
     }
   }, [destination]);
+
+  // Route polyline
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    if (routePolylineRef.current) {
+      mapRef.current.removeLayer(routePolylineRef.current);
+      routePolylineRef.current = null;
+    }
+
+    if (routeCoordinates && routeCoordinates.length > 1) {
+      routePolylineRef.current = L.polyline(routeCoordinates, {
+        color: "#22c55e",
+        weight: 4,
+        opacity: 0.7,
+        smoothFactor: 1,
+      }).addTo(mapRef.current);
+    }
+  }, [routeCoordinates]);
 
   return (
     <>
