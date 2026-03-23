@@ -14,6 +14,12 @@ export interface Driver {
   heading?: number | null;
 }
 
+export interface Destination {
+  lat: number;
+  lng: number;
+  label?: string | null;
+}
+
 const DRIVER_COLORS = ["#22c55e", "#06b6d4", "#f59e0b", "#ef4444", "#a855f7", "#ec4899"];
 
 const generateCode = () => {
