@@ -19,6 +19,7 @@ interface ConvoyPanelProps {
   convoyCode: string | null;
   onCreateConvoy: (name: string) => void;
   onJoinConvoy: (code: string, name: string) => void;
+  onLeaveConvoy?: () => void;
 }
 
 const ConvoyPanel = ({ drivers, convoyCode, onCreateConvoy, onJoinConvoy }: ConvoyPanelProps) => {
