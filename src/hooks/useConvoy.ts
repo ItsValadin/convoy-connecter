@@ -32,11 +32,12 @@ export const useConvoy = (initialCenter: [number, number]) => {
   const watchIdRef = useRef<number | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const positionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const dbIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const latestPositionRef = useRef<{ lat: number; lng: number; speed: number | null; heading: number | null }>({
     lat: initialCenter[0], lng: initialCenter[1], speed: null, heading: null,
   });
 
-  // Subscribe to realtime changes for convoy members
+  // Subscribe to realtime broadcast + postgres changes for convoy members
   const subscribeToConvoy = useCallback((cId: string) => {
     channelRef.current = supabase
       .channel(`convoy-${cId}`)
@@ -44,10 +45,25 @@ export const useConvoy = (initialCenter: [number, number]) => {
         "postgres_changes",
         { event: "*", schema: "public", table: "convoy_members", filter: `convoy_id=eq.${cId}` },
         () => {
-          // Re-fetch all members on any change
           fetchMembers(cId);
         }
       )
+      .on("broadcast", { event: "position" }, ({ payload }) => {
+        if (payload.session_id === sessionIdRef.current) return;
+        setDrivers((prev) => {
+          const idx = prev.findIndex((d) => d.id === payload.session_id);
+          if (idx === -1) return prev; // unknown member, wait for DB sync
+          const updated = [...prev];
+          updated[idx] = {
+            ...updated[idx],
+            lat: payload.lat,
+            lng: payload.lng,
+            speed: payload.speed,
+            heading: payload.heading,
+          };
+          return updated;
+        });
+      })
       .subscribe();
   }, []);
 
@@ -77,9 +93,26 @@ export const useConvoy = (initialCenter: [number, number]) => {
     }
   };
 
-  // Periodically push position to DB
+  // Broadcast position instantly via Realtime, persist to DB less often
   const startPositionSync = useCallback((cId: string) => {
-    positionIntervalRef.current = setInterval(async () => {
+    // Fast broadcast every 500ms
+    const broadcastInterval = setInterval(() => {
+      const pos = latestPositionRef.current;
+      channelRef.current?.send({
+        type: "broadcast",
+        event: "position",
+        payload: {
+          session_id: sessionIdRef.current,
+          lat: pos.lat,
+          lng: pos.lng,
+          speed: pos.speed,
+          heading: pos.heading,
+        },
+      });
+    }, 500);
+
+    // Slower DB persist every 5s
+    const dbInterval = setInterval(async () => {
       const pos = latestPositionRef.current;
       await supabase
         .from("convoy_members")
@@ -92,7 +125,10 @@ export const useConvoy = (initialCenter: [number, number]) => {
         })
         .eq("convoy_id", cId)
         .eq("session_id", sessionIdRef.current);
-    }, 2000); // push every 2s
+    }, 5000);
+
+    positionIntervalRef.current = broadcastInterval;
+    dbIntervalRef.current = dbInterval;
   }, []);
 
   // GPS tracking
@@ -236,6 +272,10 @@ export const useConvoy = (initialCenter: [number, number]) => {
       clearInterval(positionIntervalRef.current);
       positionIntervalRef.current = null;
     }
+    if (dbIntervalRef.current) {
+      clearInterval(dbIntervalRef.current);
+      dbIntervalRef.current = null;
+    }
 
     setConvoyCode(null);
     setConvoyId(null);
@@ -253,6 +293,9 @@ export const useConvoy = (initialCenter: [number, number]) => {
       }
       if (positionIntervalRef.current) {
         clearInterval(positionIntervalRef.current);
+      }
+      if (dbIntervalRef.current) {
+        clearInterval(dbIntervalRef.current);
       }
     };
   }, []);
