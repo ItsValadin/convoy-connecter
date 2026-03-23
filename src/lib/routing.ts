@@ -1,7 +1,7 @@
 import type { RouteInfo, RouteStep } from "@/components/NavigationPanel";
 
 interface OSRMStep {
-  maneuver: { instruction: string };
+  maneuver: { instruction: string; location: [number, number] };
   distance: number;
   duration: number;
 }
