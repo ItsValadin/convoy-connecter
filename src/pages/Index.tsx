@@ -238,6 +238,19 @@ const Index = () => {
         onLeaveConvoy={handleLeave}
       />
 
+      {/* Center on me button */}
+      {convoyCode && (
+        <Button
+          size="icon"
+          variant="outline"
+          className="absolute bottom-16 right-4 z-10 bg-card/90 backdrop-blur-xl border-border hover:bg-primary/20 hover:border-primary/50"
+          onClick={handleCenterOnMe}
+          title="Center on me"
+        >
+          <Crosshair className="w-5 h-5 text-primary" />
+        </Button>
+      )}
+
       {/* Bottom status bar */}
       {convoyCode && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 bg-card/90 backdrop-blur-xl border border-border rounded-full px-5 py-2.5 flex items-center gap-4">
