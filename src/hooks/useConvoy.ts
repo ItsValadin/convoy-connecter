@@ -34,6 +34,8 @@ export const useConvoy = (initialCenter: [number, number]) => {
   const [convoyId, setConvoyId] = useState<string | null>(null);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [gpsActive, setGpsActive] = useState(false);
+  const [destination, setDestination] = useState<Destination | null>(null);
+  const [isLeader, setIsLeader] = useState(false);
   const sessionIdRef = useRef(generateSessionId());
   const watchIdRef = useRef<number | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
