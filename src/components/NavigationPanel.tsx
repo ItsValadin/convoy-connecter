@@ -40,7 +40,7 @@ const NavigationPanel = ({ route, loading }: NavigationPanelProps) => {
   if (!route && !loading) return null;
 
   return (
-    <div className="absolute bottom-20 left-4 z-10 w-72 max-h-[50vh] flex flex-col">
+    <div className="w-72 max-h-[50vh] flex flex-col">
       {/* Summary bar */}
       <button
         onClick={() => setExpanded(!expanded)}
