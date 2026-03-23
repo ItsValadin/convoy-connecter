@@ -302,6 +302,7 @@ export const useConvoy = (initialCenter: [number, number]) => {
 
   return {
     convoyCode,
+    convoyId,
     drivers,
     gpsActive,
     sessionId: sessionIdRef.current,

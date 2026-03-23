@@ -67,6 +67,44 @@ export type Database = {
           },
         ]
       }
+      convoy_messages: {
+        Row: {
+          convoy_id: string
+          created_at: string
+          id: string
+          message: string
+          sender_color: string
+          sender_name: string
+          session_id: string
+        }
+        Insert: {
+          convoy_id: string
+          created_at?: string
+          id?: string
+          message: string
+          sender_color?: string
+          sender_name: string
+          session_id: string
+        }
+        Update: {
+          convoy_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          sender_color?: string
+          sender_name?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "convoy_messages_convoy_id_fkey"
+            columns: ["convoy_id"]
+            isOneToOne: false
+            referencedRelation: "convoys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       convoys: {
         Row: {
           code: string

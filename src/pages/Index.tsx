@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import L from "leaflet";
 import ConvoyMap from "@/components/ConvoyMap";
+import ConvoyChat from "@/components/ConvoyChat";
 import ConvoyPanel from "@/components/ConvoyPanel";
 import { toast } from "sonner";
 import { Crosshair } from "lucide-react";
@@ -16,6 +17,7 @@ const Index = () => {
 
   const {
     convoyCode,
+    convoyId,
     drivers,
     gpsActive,
     sessionId,
@@ -58,6 +60,19 @@ const Index = () => {
         onJoinConvoy={handleJoin}
         onLeaveConvoy={handleLeave}
       />
+
+      {/* Chat */}
+      {convoyCode && convoyId && (() => {
+        const self = drivers.find((d) => d.id === sessionId);
+        return (
+          <ConvoyChat
+            convoyId={convoyId}
+            sessionId={sessionId}
+            senderName={self?.name ?? "Unknown"}
+            senderColor={self?.color ?? "#22c55e"}
+          />
+        );
+      })()}
 
       {/* Center on me button */}
       {convoyCode && (
