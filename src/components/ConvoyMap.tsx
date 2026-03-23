@@ -78,11 +78,12 @@ const createDestinationIcon = () => {
   });
 };
 
-const ConvoyMap = ({ drivers, center, destination, isLeader, onMapReady, onMapClick }: ConvoyMapProps) => {
+const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, onMapReady, onMapClick }: ConvoyMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
   const polylineRef = useRef<L.Polyline | null>(null);
+  const routePolylineRef = useRef<L.Polyline | null>(null);
   const destinationMarkerRef = useRef<L.Marker | null>(null);
   const onMapClickRef = useRef(onMapClick);
   onMapClickRef.current = onMapClick;
