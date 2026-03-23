@@ -64,7 +64,7 @@ const Index = () => {
         <Button
           size="icon"
           variant="outline"
-          className="absolute bottom-16 right-4 z-10 bg-card/90 backdrop-blur-xl border-border hover:bg-primary/20 hover:border-primary/50"
+          className="absolute bottom-28 right-4 z-10 bg-card/90 backdrop-blur-xl border-border hover:bg-primary/20 hover:border-primary/50"
           onClick={handleCenterOnMe}
           title="Center on me"
         >
