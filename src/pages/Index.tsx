@@ -84,6 +84,14 @@ const Index = () => {
         if (result) {
           setRouteInfo(result.info);
           setRouteCoordinates(result.coordinates);
+          // Auto-fit map to show driver + destination on first route
+          if (mapInstanceRef.current) {
+            const bounds = L.latLngBounds(
+              [self.lat, self.lng],
+              [destination.lat, destination.lng]
+            );
+            mapInstanceRef.current.fitBounds(bounds, { padding: [60, 60], maxZoom: 15, duration: 0.8 });
+          }
         }
       });
     }, lastRouteFetchRef.current === 0 ? 0 : 10000);
