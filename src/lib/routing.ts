@@ -1,10 +1,38 @@
 import type { RouteInfo, RouteStep } from "@/components/NavigationPanel";
 
+interface OSRMManeuver {
+  instruction?: string;
+  type: string;
+  modifier?: string;
+  location: [number, number];
+}
+
 interface OSRMStep {
-  maneuver: { instruction: string; location: [number, number] };
+  maneuver: OSRMManeuver;
+  name: string;
   distance: number;
   duration: number;
 }
+
+const buildInstruction = (m: OSRMManeuver, name: string): string => {
+  if (m.instruction) return m.instruction;
+  const road = name && name !== "" ? ` onto ${name}` : "";
+  switch (m.type) {
+    case "depart": return `Head ${m.modifier || "north"}${road}`;
+    case "arrive": return "You have arrived at your destination";
+    case "turn": return `Turn ${m.modifier || ""}${road}`;
+    case "new name": return `Continue${road}`;
+    case "merge": return `Merge ${m.modifier || ""}${road}`;
+    case "on ramp": return `Take the ramp${road}`;
+    case "off ramp": return `Take the exit${road}`;
+    case "fork": return `Keep ${m.modifier || "straight"}${road}`;
+    case "end of road": return `Turn ${m.modifier || ""}${road}`;
+    case "roundabout":
+    case "rotary": return `Enter the roundabout, then exit${road}`;
+    case "continue": return `Continue ${m.modifier || "straight"}${road}`;
+    default: return `Continue${road}`;
+  }
+};
 
 interface OSRMRoute {
   distance: number;
@@ -36,7 +64,7 @@ export const fetchRoute = async (
       .flatMap((leg) => leg.steps)
       .filter((s) => s.distance > 0)
       .map((s) => ({
-        instruction: s.maneuver.instruction,
+        instruction: buildInstruction(s.maneuver, s.name),
         distance: s.distance,
         duration: s.duration,
         location: [s.maneuver.location[1], s.maneuver.location[0]] as [number, number],
