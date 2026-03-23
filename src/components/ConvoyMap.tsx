@@ -13,10 +13,19 @@ interface Driver {
   heading?: number | null;
 }
 
+interface Destination {
+  lat: number;
+  lng: number;
+  label?: string | null;
+}
+
 interface ConvoyMapProps {
   drivers: Driver[];
   center: [number, number];
+  destination?: Destination | null;
+  isLeader?: boolean;
   onMapReady?: (map: L.Map) => void;
+  onMapClick?: (lat: number, lng: number) => void;
 }
 
 const createDriverIcon = (color: string, isLeader: boolean, speed?: number | null, heading?: number | null) => {
