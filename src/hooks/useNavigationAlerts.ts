@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import type { RouteStep } from "@/components/NavigationPanel";
 
 const ALERT_DISTANCE_M = 200;
 const MIN_ALERT_INTERVAL_MS = 8000;
 
-function haversineDistance(
+export function haversineDistance(
   lat1: number, lng1: number,
   lat2: number, lng2: number
 ): number {
@@ -16,6 +16,13 @@ function haversineDistance(
     Math.sin(dLat / 2) ** 2 +
     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+export interface NextStep {
+  instruction: string;
+  distanceM: number;
+  stepIndex: number;
+  totalSteps: number;
 }
 
 export const useNavigationAlerts = (
@@ -44,6 +51,29 @@ export const useNavigationAlerts = (
     utterance.volume = 1.0;
     synthRef.current.speak(utterance);
   }, []);
+
+  // Compute the nearest upcoming step
+  const nextStep: NextStep | null = useMemo(() => {
+    if (!enabled || !steps?.length || userLat == null || userLng == null) return null;
+
+    let closest: { idx: number; dist: number } | null = null;
+    for (let i = 0; i < steps.length; i++) {
+      const step = steps[i];
+      const dist = haversineDistance(userLat, userLng, step.location[0], step.location[1]);
+      if (!closest || dist < closest.dist) {
+        closest = { idx: i, dist };
+      }
+    }
+
+    if (!closest) return null;
+    const step = steps[closest.idx];
+    return {
+      instruction: step.instruction,
+      distanceM: closest.dist,
+      stepIndex: closest.idx,
+      totalSteps: steps.length,
+    };
+  }, [steps, userLat, userLng, enabled]);
 
   useEffect(() => {
     if (!enabled || muted || !steps?.length || userLat == null || userLng == null) return;
@@ -76,5 +106,5 @@ export const useNavigationAlerts = (
     });
   }, []);
 
-  return { muted, toggleMute };
+  return { muted, toggleMute, nextStep };
 };
