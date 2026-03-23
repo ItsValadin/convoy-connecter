@@ -359,9 +359,13 @@ export const useConvoy = (initialCenter: [number, number]) => {
     convoyId,
     drivers,
     gpsActive,
+    destination,
+    isLeader,
     sessionId: sessionIdRef.current,
     handleCreate,
     handleJoin,
     handleLeave,
+    handleSetDestination,
+    handleClearDestination,
   };
 };
