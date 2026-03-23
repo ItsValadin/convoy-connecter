@@ -22,7 +22,7 @@ interface ConvoyPanelProps {
   onLeaveConvoy?: () => void;
 }
 
-const ConvoyPanel = ({ drivers, convoyCode, onCreateConvoy, onJoinConvoy }: ConvoyPanelProps) => {
+const ConvoyPanel = ({ drivers, convoyCode, onCreateConvoy, onJoinConvoy, onLeaveConvoy }: ConvoyPanelProps) => {
   const [name, setName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [mode, setMode] = useState<"idle" | "create" | "join">("idle");
