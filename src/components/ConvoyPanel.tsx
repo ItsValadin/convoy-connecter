@@ -41,6 +41,7 @@ const ConvoyPanel = ({ drivers, convoyCode, onCreateConvoy, onJoinConvoy, onLeav
   const [joinCode, setJoinCode] = useState("");
   const [mode, setMode] = useState<"idle" | "create" | "join">("idle");
   const [copied, setCopied] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   const handleCopy = () => {
     if (convoyCode) {
