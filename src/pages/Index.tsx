@@ -10,6 +10,8 @@ interface Driver {
   lng: number;
   color: string;
   isLeader: boolean;
+  speed?: number | null;   // m/s from GPS
+  heading?: number | null;  // degrees from GPS
 }
 
 const DRIVER_COLORS = ["#22c55e", "#06b6d4", "#f59e0b", "#ef4444", "#a855f7", "#ec4899"];
