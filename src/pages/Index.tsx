@@ -9,7 +9,7 @@ import { Crosshair } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConvoy } from "@/hooks/useConvoy";
 
-const DEFAULT_CENTER: [number, number] = [34.0522, -118.2437];
+const DEFAULT_CENTER: [number, number] = [34.0522, -118.2437]; // LA
 
 const Index = () => {
   const [center, setCenter] = useState<[number, number]>(DEFAULT_CENTER);
