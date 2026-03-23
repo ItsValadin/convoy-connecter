@@ -45,6 +45,20 @@ export const useConvoy = (initialCenter: [number, number]) => {
     lat: initialCenter[0], lng: initialCenter[1], speed: null, heading: null,
   });
 
+  // Fetch destination from convoy record
+  const fetchDestination = async (cId: string) => {
+    const { data } = await supabase
+      .from("convoys")
+      .select("destination_lat, destination_lng, destination_label")
+      .eq("id", cId)
+      .single();
+    if (data && data.destination_lat != null && data.destination_lng != null) {
+      setDestination({ lat: data.destination_lat, lng: data.destination_lng, label: data.destination_label });
+    } else {
+      setDestination(null);
+    }
+  };
+
   // Subscribe to realtime broadcast + postgres changes for convoy members
   const subscribeToConvoy = useCallback((cId: string) => {
     channelRef.current = supabase
@@ -56,11 +70,18 @@ export const useConvoy = (initialCenter: [number, number]) => {
           fetchMembers(cId);
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "convoys", filter: `id=eq.${cId}` },
+        () => {
+          fetchDestination(cId);
+        }
+      )
       .on("broadcast", { event: "position" }, ({ payload }) => {
         if (payload.session_id === sessionIdRef.current) return;
         setDrivers((prev) => {
           const idx = prev.findIndex((d) => d.id === payload.session_id);
-          if (idx === -1) return prev; // unknown member, wait for DB sync
+          if (idx === -1) return prev;
           const updated = [...prev];
           updated[idx] = {
             ...updated[idx],
