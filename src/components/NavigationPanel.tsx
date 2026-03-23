@@ -18,6 +18,8 @@ export interface RouteInfo {
 interface NavigationPanelProps {
   route: RouteInfo | null;
   loading?: boolean;
+  liveEtaSec?: number | null;
+  arrivalTime?: Date | null;
 }
 
 const formatDistance = (meters: number) => {
