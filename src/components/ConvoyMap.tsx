@@ -16,6 +16,7 @@ interface Driver {
 interface ConvoyMapProps {
   drivers: Driver[];
   center: [number, number];
+  onMapReady?: (map: L.Map) => void;
 }
 
 const createDriverIcon = (color: string, isLeader: boolean, speed?: number | null, heading?: number | null) => {
@@ -50,7 +51,7 @@ const createDriverIcon = (color: string, isLeader: boolean, speed?: number | nul
   });
 };
 
-const ConvoyMap = ({ drivers, center }: ConvoyMapProps) => {
+const ConvoyMap = ({ drivers, center, onMapReady }: ConvoyMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
@@ -71,6 +72,7 @@ const ConvoyMap = ({ drivers, center }: ConvoyMapProps) => {
     }).addTo(mapRef.current);
 
     L.control.zoom({ position: "bottomright" }).addTo(mapRef.current);
+    onMapReady?.(mapRef.current);
 
     return () => {
       mapRef.current?.remove();

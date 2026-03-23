@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import L from "leaflet";
 import ConvoyMap from "@/components/ConvoyMap";
 import ConvoyPanel from "@/components/ConvoyPanel";
 import { toast } from "sonner";
+import { Crosshair } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface Driver {
   id: string;
@@ -43,6 +46,16 @@ const Index = () => {
   const [gpsActive, setGpsActive] = useState(false);
   const watchIdRef = useRef<number | null>(null);
   const hasSetInitialCenter = useRef(false);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+
+  const handleCenterOnMe = useCallback(() => {
+    const self = drivers.find((d) => d.id === "self");
+    if (self && mapInstanceRef.current) {
+      mapInstanceRef.current.flyTo([self.lat, self.lng], 16, { duration: 0.8 });
+    } else {
+      toast.error("No GPS position yet");
+    }
+  }, [drivers]);
 
   // Request GPS and watch position
   const startGpsTracking = useCallback(() => {
@@ -216,7 +229,7 @@ const Index = () => {
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">
-      <ConvoyMap drivers={drivers} center={center} />
+      <ConvoyMap drivers={drivers} center={center} onMapReady={(map) => { mapInstanceRef.current = map; }} />
       <ConvoyPanel
         drivers={drivers}
         convoyCode={convoyCode}
@@ -224,6 +237,19 @@ const Index = () => {
         onJoinConvoy={handleJoin}
         onLeaveConvoy={handleLeave}
       />
+
+      {/* Center on me button */}
+      {convoyCode && (
+        <Button
+          size="icon"
+          variant="outline"
+          className="absolute bottom-16 right-4 z-10 bg-card/90 backdrop-blur-xl border-border hover:bg-primary/20 hover:border-primary/50"
+          onClick={handleCenterOnMe}
+          title="Center on me"
+        >
+          <Crosshair className="w-5 h-5 text-primary" />
+        </Button>
+      )}
 
       {/* Bottom status bar */}
       {convoyCode && (
