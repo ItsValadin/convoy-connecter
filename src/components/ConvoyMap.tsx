@@ -9,6 +9,8 @@ interface Driver {
   lng: number;
   color: string;
   isLeader: boolean;
+  speed?: number | null;
+  heading?: number | null;
 }
 
 interface ConvoyMapProps {
