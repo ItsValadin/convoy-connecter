@@ -284,6 +284,26 @@ export const useConvoy = (initialCenter: [number, number]) => {
     toast.success(`Joined convoy ${code}!`);
   }, [subscribeToConvoy, startGpsTracking, startPositionSync]);
 
+  const handleSetDestination = useCallback(async (lat: number, lng: number) => {
+    if (!convoyId || !isLeader) return;
+    await supabase
+      .from("convoys")
+      .update({ destination_lat: lat, destination_lng: lng, destination_label: null })
+      .eq("id", convoyId);
+    setDestination({ lat, lng, label: null });
+    toast.success("Destination set!");
+  }, [convoyId, isLeader]);
+
+  const handleClearDestination = useCallback(async () => {
+    if (!convoyId || !isLeader) return;
+    await supabase
+      .from("convoys")
+      .update({ destination_lat: null, destination_lng: null, destination_label: null })
+      .eq("id", convoyId);
+    setDestination(null);
+    toast("Destination cleared");
+  }, [convoyId, isLeader]);
+
   const handleLeave = useCallback(async () => {
     if (convoyId) {
       await supabase
