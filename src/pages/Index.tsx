@@ -229,7 +229,7 @@ const Index = () => {
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">
-      <ConvoyMap drivers={drivers} center={center} />
+      <ConvoyMap drivers={drivers} center={center} onMapReady={(map) => { mapInstanceRef.current = map; }} />
       <ConvoyPanel
         drivers={drivers}
         convoyCode={convoyCode}
