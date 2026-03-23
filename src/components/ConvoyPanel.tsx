@@ -54,7 +54,9 @@ const ConvoyPanel = ({ drivers, convoyCode, onCreateConvoy, onJoinConvoy, onLeav
   const isInConvoy = convoyCode !== null;
 
   return (
-    <div className="absolute top-4 left-4 z-10 w-80">
+    <div className="absolute top-4 left-4 z-10 flex items-start gap-2">
+      {/* Panel */}
+      <div className={`w-80 transition-all duration-300 ${collapsed ? "-translate-x-[calc(100%+1rem)] opacity-0 pointer-events-none" : "translate-x-0 opacity-100"}`}>
       {/* Header */}
       <div className="bg-card/95 backdrop-blur-xl border border-border rounded-xl overflow-hidden">
         <div className="p-4 border-b border-border">
