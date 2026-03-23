@@ -51,7 +51,7 @@ const createDriverIcon = (color: string, isLeader: boolean, speed?: number | nul
   });
 };
 
-const ConvoyMap = ({ drivers, center }: ConvoyMapProps) => {
+const ConvoyMap = ({ drivers, center, onMapReady }: ConvoyMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
