@@ -7,7 +7,7 @@ import ConvoyPanel from "@/components/ConvoyPanel";
 import NavigationPanel, { type RouteInfo } from "@/components/NavigationPanel";
 import { useNavigationAlerts } from "@/hooks/useNavigationAlerts";
 import { toast } from "sonner";
-import { Crosshair } from "lucide-react";
+import { Crosshair, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConvoy } from "@/hooks/useConvoy";
 import { fetchRoute, type RouteGeometry } from "@/lib/routing";
@@ -94,7 +94,7 @@ const Index = () => {
 
   // Voice turn-by-turn alerts
   const self = drivers.find((d) => d.id === sessionId);
-  useNavigationAlerts(
+  const { muted, toggleMute } = useNavigationAlerts(
     routeInfo?.steps,
     self?.lat ?? null,
     self?.lng ?? null,
@@ -144,7 +144,18 @@ const Index = () => {
 
       {/* Navigation panel */}
       {convoyCode && destination && (
-        <NavigationPanel route={routeInfo} loading={routeLoading} />
+        <div className="absolute bottom-20 left-4 z-10 flex items-end gap-2">
+          <NavigationPanel route={routeInfo} loading={routeLoading} />
+          <Button
+            size="icon"
+            variant="outline"
+            className="mb-0 bg-card/90 backdrop-blur-xl border-border hover:bg-primary/20 hover:border-primary/50"
+            onClick={toggleMute}
+            title={muted ? "Unmute voice alerts" : "Mute voice alerts"}
+          >
+            {muted ? <VolumeX className="w-4 h-4 text-muted-foreground" /> : <Volume2 className="w-4 h-4 text-primary" />}
+          </Button>
+        </div>
       )}
       {convoyCode && (
         <Button
