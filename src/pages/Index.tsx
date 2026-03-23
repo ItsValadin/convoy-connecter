@@ -122,7 +122,10 @@ const Index = () => {
         />
       )}
 
-      {/* Center on me button */}
+      {/* Navigation panel */}
+      {convoyCode && destination && (
+        <NavigationPanel route={routeInfo} loading={routeLoading} />
+      )}
       {convoyCode && (
         <Button
           size="icon"
