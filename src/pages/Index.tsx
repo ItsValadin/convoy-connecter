@@ -144,7 +144,18 @@ const Index = () => {
 
       {/* Navigation panel */}
       {convoyCode && destination && (
-        <NavigationPanel route={routeInfo} loading={routeLoading} />
+        <div className="absolute bottom-20 left-4 z-10 flex items-end gap-2">
+          <NavigationPanel route={routeInfo} loading={routeLoading} />
+          <Button
+            size="icon"
+            variant="outline"
+            className="mb-0 bg-card/90 backdrop-blur-xl border-border hover:bg-primary/20 hover:border-primary/50"
+            onClick={toggleMute}
+            title={muted ? "Unmute voice alerts" : "Mute voice alerts"}
+          >
+            {muted ? <VolumeX className="w-4 h-4 text-muted-foreground" /> : <Volume2 className="w-4 h-4 text-primary" />}
+          </Button>
+        </div>
       )}
       {convoyCode && (
         <Button
