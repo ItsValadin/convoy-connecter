@@ -126,7 +126,7 @@ const Index = () => {
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">
-      {/* Next turn banner */}
+      {/* Next turn banner + ETA */}
       {convoyCode && destination && nextStep && nextStep.instruction && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-lg">
           <div className="bg-primary text-primary-foreground rounded-xl px-4 py-3 flex items-center gap-3 shadow-lg">
@@ -142,6 +142,15 @@ const Index = () => {
                 {" • "}Step {nextStep.stepIndex + 1} of {nextStep.totalSteps}
               </p>
             </div>
+            {liveEta && (
+              <div className="text-right shrink-0">
+                <p className="font-display text-sm font-bold">{formatEta(liveEta.remainingSec)}</p>
+                <p className="font-display text-[10px] opacity-80 flex items-center gap-0.5 justify-end">
+                  <Clock className="w-3 h-3" />
+                  {formatTime(liveEta.arrivalTime)}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
