@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import L from "leaflet";
 import ConvoyMap from "@/components/ConvoyMap";
 import ConvoyChat from "@/components/ConvoyChat";
+import DestinationSearch from "@/components/DestinationSearch";
 import ConvoyPanel from "@/components/ConvoyPanel";
 import { toast } from "sonner";
 import { Crosshair, MapPin, X } from "lucide-react";
