@@ -226,6 +226,7 @@ export const useConvoy = (initialCenter: [number, number]) => {
 
     setConvoyCode(code);
     setConvoyId(convoy.id);
+    setIsLeader(true);
     await fetchMembers(convoy.id);
     subscribeToConvoy(convoy.id);
     startGpsTracking();
