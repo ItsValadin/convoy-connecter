@@ -100,6 +100,11 @@ const ConvoyMap = ({ drivers, center, destination, isLeader, onMapReady, onMapCl
     }).addTo(mapRef.current);
 
     L.control.zoom({ position: "bottomright" }).addTo(mapRef.current);
+    
+    mapRef.current.on("contextmenu", (e: L.LeafletMouseEvent) => {
+      onMapClickRef.current?.(e.latlng.lat, e.latlng.lng);
+    });
+
     onMapReady?.(mapRef.current);
 
     return () => {
