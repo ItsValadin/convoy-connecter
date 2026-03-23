@@ -178,6 +178,18 @@ const Index = () => {
     startGpsTracking();
   }, [center, startGpsTracking]);
 
+  const handleLeave = useCallback(() => {
+    setConvoyCode(null);
+    setDrivers([]);
+    setTick(0);
+    setGpsActive(false);
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    toast("You left the convoy");
+  }, []);
+
   // Simulate other drivers' movement
   useEffect(() => {
     if (!convoyCode || drivers.length === 0) return;
