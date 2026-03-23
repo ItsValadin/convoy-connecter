@@ -64,7 +64,7 @@ export const fetchRoute = async (
       .flatMap((leg) => leg.steps)
       .filter((s) => s.distance > 0)
       .map((s) => ({
-        instruction: s.maneuver.instruction,
+        instruction: buildInstruction(s.maneuver, s.name),
         distance: s.distance,
         duration: s.duration,
         location: [s.maneuver.location[1], s.maneuver.location[0]] as [number, number],
