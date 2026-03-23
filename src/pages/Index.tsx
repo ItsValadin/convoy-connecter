@@ -5,6 +5,7 @@ import ConvoyChat from "@/components/ConvoyChat";
 import DestinationSearch from "@/components/DestinationSearch";
 import ConvoyPanel from "@/components/ConvoyPanel";
 import NavigationPanel, { type RouteInfo } from "@/components/NavigationPanel";
+import { useNavigationAlerts } from "@/hooks/useNavigationAlerts";
 import { toast } from "sonner";
 import { Crosshair } from "lucide-react";
 import { Button } from "@/components/ui/button";
