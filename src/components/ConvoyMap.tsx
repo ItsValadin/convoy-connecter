@@ -89,7 +89,7 @@ const ConvoyMap = ({ drivers, center }: ConvoyMapProps) => {
         existing.setIcon(createDriverIcon(driver.color, driver.isLeader, driver.speed, driver.heading));
       } else {
         const marker = L.marker([driver.lat, driver.lng], {
-          icon: createDriverIcon(driver.color, driver.isLeader),
+          icon: createDriverIcon(driver.color, driver.isLeader, driver.speed, driver.heading),
         })
           .bindTooltip(driver.name, {
             permanent: false,
