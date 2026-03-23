@@ -177,7 +177,24 @@ const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, o
     }
   }, [destination]);
 
-  return (
+  // Route polyline
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    if (routePolylineRef.current) {
+      mapRef.current.removeLayer(routePolylineRef.current);
+      routePolylineRef.current = null;
+    }
+
+    if (routeCoordinates && routeCoordinates.length > 1) {
+      routePolylineRef.current = L.polyline(routeCoordinates, {
+        color: "#22c55e",
+        weight: 4,
+        opacity: 0.7,
+        smoothFactor: 1,
+      }).addTo(mapRef.current);
+    }
+  }, [routeCoordinates]);
     <>
       <style>{`
         .convoy-marker { background: none !important; border: none !important; }
