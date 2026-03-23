@@ -195,6 +195,8 @@ const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, o
       }).addTo(mapRef.current);
     }
   }, [routeCoordinates]);
+
+  return (
     <>
       <style>{`
         .convoy-marker { background: none !important; border: none !important; }
