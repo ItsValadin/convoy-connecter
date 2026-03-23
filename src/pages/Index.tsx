@@ -61,6 +61,19 @@ const Index = () => {
         onLeaveConvoy={handleLeave}
       />
 
+      {/* Chat */}
+      {convoyCode && convoyId && (() => {
+        const self = drivers.find((d) => d.id === sessionId);
+        return (
+          <ConvoyChat
+            convoyId={convoyId}
+            sessionId={sessionId}
+            senderName={self?.name ?? "Unknown"}
+            senderColor={self?.color ?? "#22c55e"}
+          />
+        );
+      })()}
+
       {/* Center on me button */}
       {convoyCode && (
         <Button
