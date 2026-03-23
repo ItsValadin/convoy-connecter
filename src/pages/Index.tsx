@@ -92,6 +92,15 @@ const Index = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [destination, sessionId]);
 
+  // Voice turn-by-turn alerts
+  const self = drivers.find((d) => d.id === sessionId);
+  useNavigationAlerts(
+    routeInfo?.steps,
+    self?.lat ?? null,
+    self?.lng ?? null,
+    !!convoyCode && !!destination
+  );
+
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">
       <ConvoyMap
