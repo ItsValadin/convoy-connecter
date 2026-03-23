@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, Copy, Plus, LogIn, Navigation, Crown, Circle } from "lucide-react";
+import { Users, Copy, Plus, LogIn, Navigation, Crown, Circle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -19,9 +19,10 @@ interface ConvoyPanelProps {
   convoyCode: string | null;
   onCreateConvoy: (name: string) => void;
   onJoinConvoy: (code: string, name: string) => void;
+  onLeaveConvoy?: () => void;
 }
 
-const ConvoyPanel = ({ drivers, convoyCode, onCreateConvoy, onJoinConvoy }: ConvoyPanelProps) => {
+const ConvoyPanel = ({ drivers, convoyCode, onCreateConvoy, onJoinConvoy, onLeaveConvoy }: ConvoyPanelProps) => {
   const [name, setName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [mode, setMode] = useState<"idle" | "create" | "join">("idle");
@@ -102,6 +103,15 @@ const ConvoyPanel = ({ drivers, convoyCode, onCreateConvoy, onJoinConvoy }: Conv
                   )}
                 </div>
               ))}
+            </div>
+            <div className="px-3 pb-3">
+              <Button
+                variant="outline"
+                className="w-full border-destructive/50 text-destructive hover:bg-destructive/10 font-display"
+                onClick={onLeaveConvoy}
+              >
+                <LogOut className="w-4 h-4 mr-2" /> Leave Convoy
+              </Button>
             </div>
           </div>
         )}
