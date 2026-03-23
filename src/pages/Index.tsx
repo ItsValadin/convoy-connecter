@@ -17,6 +17,7 @@ const Index = () => {
 
   const {
     convoyCode,
+    convoyId,
     drivers,
     gpsActive,
     sessionId,
