@@ -14,6 +14,12 @@ export interface Driver {
   heading?: number | null;
 }
 
+export interface Destination {
+  lat: number;
+  lng: number;
+  label?: string | null;
+}
+
 const DRIVER_COLORS = ["#22c55e", "#06b6d4", "#f59e0b", "#ef4444", "#a855f7", "#ec4899"];
 
 const generateCode = () => {
@@ -28,6 +34,8 @@ export const useConvoy = (initialCenter: [number, number]) => {
   const [convoyId, setConvoyId] = useState<string | null>(null);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [gpsActive, setGpsActive] = useState(false);
+  const [destination, setDestination] = useState<Destination | null>(null);
+  const [isLeader, setIsLeader] = useState(false);
   const sessionIdRef = useRef(generateSessionId());
   const watchIdRef = useRef<number | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
@@ -36,6 +44,20 @@ export const useConvoy = (initialCenter: [number, number]) => {
   const latestPositionRef = useRef<{ lat: number; lng: number; speed: number | null; heading: number | null }>({
     lat: initialCenter[0], lng: initialCenter[1], speed: null, heading: null,
   });
+
+  // Fetch destination from convoy record
+  const fetchDestination = async (cId: string) => {
+    const { data } = await supabase
+      .from("convoys")
+      .select("destination_lat, destination_lng, destination_label")
+      .eq("id", cId)
+      .single();
+    if (data && data.destination_lat != null && data.destination_lng != null) {
+      setDestination({ lat: data.destination_lat, lng: data.destination_lng, label: data.destination_label });
+    } else {
+      setDestination(null);
+    }
+  };
 
   // Subscribe to realtime broadcast + postgres changes for convoy members
   const subscribeToConvoy = useCallback((cId: string) => {
@@ -48,11 +70,18 @@ export const useConvoy = (initialCenter: [number, number]) => {
           fetchMembers(cId);
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "convoys", filter: `id=eq.${cId}` },
+        () => {
+          fetchDestination(cId);
+        }
+      )
       .on("broadcast", { event: "position" }, ({ payload }) => {
         if (payload.session_id === sessionIdRef.current) return;
         setDrivers((prev) => {
           const idx = prev.findIndex((d) => d.id === payload.session_id);
-          if (idx === -1) return prev; // unknown member, wait for DB sync
+          if (idx === -1) return prev;
           const updated = [...prev];
           updated[idx] = {
             ...updated[idx],
@@ -197,6 +226,7 @@ export const useConvoy = (initialCenter: [number, number]) => {
 
     setConvoyCode(code);
     setConvoyId(convoy.id);
+    setIsLeader(true);
     await fetchMembers(convoy.id);
     subscribeToConvoy(convoy.id);
     startGpsTracking();
@@ -245,12 +275,34 @@ export const useConvoy = (initialCenter: [number, number]) => {
 
     setConvoyCode(code.toUpperCase());
     setConvoyId(convoy.id);
+    setIsLeader(false);
     await fetchMembers(convoy.id);
+    await fetchDestination(convoy.id);
     subscribeToConvoy(convoy.id);
     startGpsTracking();
     startPositionSync(convoy.id);
     toast.success(`Joined convoy ${code}!`);
   }, [subscribeToConvoy, startGpsTracking, startPositionSync]);
+
+  const handleSetDestination = useCallback(async (lat: number, lng: number) => {
+    if (!convoyId || !isLeader) return;
+    await supabase
+      .from("convoys")
+      .update({ destination_lat: lat, destination_lng: lng, destination_label: null })
+      .eq("id", convoyId);
+    setDestination({ lat, lng, label: null });
+    toast.success("Destination set!");
+  }, [convoyId, isLeader]);
+
+  const handleClearDestination = useCallback(async () => {
+    if (!convoyId || !isLeader) return;
+    await supabase
+      .from("convoys")
+      .update({ destination_lat: null, destination_lng: null, destination_label: null })
+      .eq("id", convoyId);
+    setDestination(null);
+    toast("Destination cleared");
+  }, [convoyId, isLeader]);
 
   const handleLeave = useCallback(async () => {
     if (convoyId) {
@@ -281,6 +333,8 @@ export const useConvoy = (initialCenter: [number, number]) => {
     setConvoyId(null);
     setDrivers([]);
     setGpsActive(false);
+    setDestination(null);
+    setIsLeader(false);
     toast("You left the convoy");
   }, [convoyId]);
 
@@ -305,9 +359,13 @@ export const useConvoy = (initialCenter: [number, number]) => {
     convoyId,
     drivers,
     gpsActive,
+    destination,
+    isLeader,
     sessionId: sessionIdRef.current,
     handleCreate,
     handleJoin,
     handleLeave,
+    handleSetDestination,
+    handleClearDestination,
   };
 };

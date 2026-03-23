@@ -109,16 +109,25 @@ export type Database = {
         Row: {
           code: string
           created_at: string
+          destination_label: string | null
+          destination_lat: number | null
+          destination_lng: number | null
           id: string
         }
         Insert: {
           code: string
           created_at?: string
+          destination_label?: string | null
+          destination_lat?: number | null
+          destination_lng?: number | null
           id?: string
         }
         Update: {
           code?: string
           created_at?: string
+          destination_label?: string | null
+          destination_lat?: number | null
+          destination_lng?: number | null
           id?: string
         }
         Relationships: []
