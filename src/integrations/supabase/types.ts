@@ -14,7 +14,77 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      convoy_members: {
+        Row: {
+          color: string
+          convoy_id: string
+          created_at: string
+          heading: number | null
+          id: string
+          is_leader: boolean
+          last_seen: string
+          lat: number
+          lng: number
+          name: string
+          session_id: string
+          speed: number | null
+        }
+        Insert: {
+          color?: string
+          convoy_id: string
+          created_at?: string
+          heading?: number | null
+          id?: string
+          is_leader?: boolean
+          last_seen?: string
+          lat?: number
+          lng?: number
+          name: string
+          session_id: string
+          speed?: number | null
+        }
+        Update: {
+          color?: string
+          convoy_id?: string
+          created_at?: string
+          heading?: number | null
+          id?: string
+          is_leader?: boolean
+          last_seen?: string
+          lat?: number
+          lng?: number
+          name?: string
+          session_id?: string
+          speed?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "convoy_members_convoy_id_fkey"
+            columns: ["convoy_id"]
+            isOneToOne: false
+            referencedRelation: "convoys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      convoys: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
