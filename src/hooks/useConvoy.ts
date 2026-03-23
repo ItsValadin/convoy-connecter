@@ -333,6 +333,8 @@ export const useConvoy = (initialCenter: [number, number]) => {
     setConvoyId(null);
     setDrivers([]);
     setGpsActive(false);
+    setDestination(null);
+    setIsLeader(false);
     toast("You left the convoy");
   }, [convoyId]);
 
