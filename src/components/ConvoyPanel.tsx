@@ -226,6 +226,7 @@ const ConvoyPanel = ({ drivers, convoyCode, onCreateConvoy, onJoinConvoy, onLeav
           </div>
         )}
       </div>
+      </div>
 
       {/* Toggle button */}
       <button
