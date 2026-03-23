@@ -5,7 +5,7 @@ import ConvoyChat from "@/components/ConvoyChat";
 import DestinationSearch from "@/components/DestinationSearch";
 import ConvoyPanel from "@/components/ConvoyPanel";
 import { toast } from "sonner";
-import { Crosshair, MapPin, X } from "lucide-react";
+import { Crosshair } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConvoy } from "@/hooks/useConvoy";
 
