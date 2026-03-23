@@ -6,6 +6,7 @@ export interface RouteStep {
   instruction: string;
   distance: number;
   duration: number;
+  location: [number, number]; // [lat, lng] of maneuver
 }
 
 export interface RouteInfo {
