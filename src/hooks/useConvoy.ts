@@ -294,6 +294,9 @@ export const useConvoy = (initialCenter: [number, number]) => {
       if (positionIntervalRef.current) {
         clearInterval(positionIntervalRef.current);
       }
+      if (dbIntervalRef.current) {
+        clearInterval(dbIntervalRef.current);
+      }
     };
   }, []);
 
