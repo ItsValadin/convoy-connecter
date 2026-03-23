@@ -86,25 +86,13 @@ const Index = () => {
         );
       })()}
 
-      {/* Destination controls for leader */}
-      {convoyCode && isLeader && destination && (
-        <Button
-          size="sm"
-          variant="outline"
-          className="absolute top-4 right-4 z-10 bg-card/90 backdrop-blur-xl border-destructive/50 text-destructive hover:bg-destructive/10 font-display"
-          onClick={handleClearDestination}
-          title="Clear destination"
-        >
-          <X className="w-4 h-4 mr-1.5" /> Clear Destination
-        </Button>
-      )}
-
-      {/* Set destination hint for leader */}
-      {convoyCode && isLeader && !destination && (
-        <div className="absolute top-4 right-4 z-10 bg-card/90 backdrop-blur-xl border border-border rounded-lg px-3 py-2 flex items-center gap-2">
-          <MapPin className="w-4 h-4 text-destructive" />
-          <span className="font-display text-[10px] text-muted-foreground">Right-click map to set destination</span>
-        </div>
+      {/* Destination search for leader */}
+      {convoyCode && isLeader && (
+        <DestinationSearch
+          onSelectDestination={handleSetDestination}
+          onClearDestination={handleClearDestination}
+          hasDestination={!!destination}
+        />
       )}
 
       {/* Center on me button */}
