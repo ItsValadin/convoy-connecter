@@ -101,6 +101,29 @@ const Index = () => {
     !!convoyCode && !!destination
   );
 
+  // Live ETA: scale route duration by remaining distance ratio
+  const liveEta = (() => {
+    if (!routeInfo || !self || !destination) return null;
+    const currentDist = haversineDistance(self.lat, self.lng, destination.lat, destination.lng);
+    const routeStartDist = routeInfo.distance; // total route distance in meters
+    if (routeStartDist <= 0) return null;
+    const ratio = Math.min(currentDist / routeStartDist, 1);
+    const remainingSec = routeInfo.duration * ratio;
+    const arrivalTime = new Date(Date.now() + remainingSec * 1000);
+    return { remainingSec, arrivalTime };
+  })();
+
+  const formatEta = (seconds: number) => {
+    if (seconds < 60) return "< 1 min";
+    const mins = Math.floor(seconds / 60);
+    if (mins < 60) return `${mins} min`;
+    const hrs = Math.floor(mins / 60);
+    return `${hrs}h ${mins % 60}m`;
+  };
+
+  const formatTime = (date: Date) =>
+    date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">
       {/* Next turn banner */}
