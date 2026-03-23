@@ -7,7 +7,7 @@ import ConvoyPanel from "@/components/ConvoyPanel";
 import NavigationPanel, { type RouteInfo } from "@/components/NavigationPanel";
 import { useNavigationAlerts } from "@/hooks/useNavigationAlerts";
 import { toast } from "sonner";
-import { Crosshair, Volume2, VolumeX } from "lucide-react";
+import { Crosshair, Volume2, VolumeX, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConvoy } from "@/hooks/useConvoy";
 import { fetchRoute, type RouteGeometry } from "@/lib/routing";
@@ -94,7 +94,7 @@ const Index = () => {
 
   // Voice turn-by-turn alerts
   const self = drivers.find((d) => d.id === sessionId);
-  const { muted, toggleMute } = useNavigationAlerts(
+  const { muted, toggleMute, nextStep } = useNavigationAlerts(
     routeInfo?.steps,
     self?.lat ?? null,
     self?.lng ?? null,
@@ -103,6 +103,25 @@ const Index = () => {
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">
+      {/* Next turn banner */}
+      {convoyCode && destination && nextStep && nextStep.instruction && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-lg">
+          <div className="bg-primary text-primary-foreground rounded-xl px-4 py-3 flex items-center gap-3 shadow-lg">
+            <Navigation className="w-6 h-6 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="font-display text-sm font-semibold leading-snug truncate">
+                {nextStep.instruction}
+              </p>
+              <p className="font-display text-xs opacity-80">
+                {nextStep.distanceM >= 1000
+                  ? `${(nextStep.distanceM / 1000).toFixed(1)} km`
+                  : `${Math.round(nextStep.distanceM)} m`}
+                {" • "}Step {nextStep.stepIndex + 1} of {nextStep.totalSteps}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       <ConvoyMap
         drivers={drivers}
         center={center}
