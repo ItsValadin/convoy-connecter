@@ -275,7 +275,9 @@ export const useConvoy = (initialCenter: [number, number]) => {
 
     setConvoyCode(code.toUpperCase());
     setConvoyId(convoy.id);
+    setIsLeader(false);
     await fetchMembers(convoy.id);
+    await fetchDestination(convoy.id);
     subscribeToConvoy(convoy.id);
     startGpsTracking();
     startPositionSync(convoy.id);
