@@ -46,6 +46,16 @@ const Index = () => {
   const [gpsActive, setGpsActive] = useState(false);
   const watchIdRef = useRef<number | null>(null);
   const hasSetInitialCenter = useRef(false);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+
+  const handleCenterOnMe = useCallback(() => {
+    const self = drivers.find((d) => d.id === "self");
+    if (self && mapInstanceRef.current) {
+      mapInstanceRef.current.flyTo([self.lat, self.lng], 16, { duration: 0.8 });
+    } else {
+      toast.error("No GPS position yet");
+    }
+  }, [drivers]);
 
   // Request GPS and watch position
   const startGpsTracking = useCallback(() => {
