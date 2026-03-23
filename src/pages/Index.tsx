@@ -60,7 +60,8 @@ const Index = () => {
     }
   }, []);
 
-  // Fetch route when destination changes or driver position updates significantly
+  // Fetch route when destination changes (debounced to avoid spamming OSRM)
+  const lastRouteFetchRef = useRef(0);
   useEffect(() => {
     if (!destination) {
       setRouteInfo(null);
@@ -71,15 +72,24 @@ const Index = () => {
     const self = drivers.find((d) => d.id === sessionId);
     if (!self) return;
 
-    setRouteLoading(true);
-    fetchRoute(self.lat, self.lng, destination.lat, destination.lng).then((result) => {
-      setRouteLoading(false);
-      if (result) {
-        setRouteInfo(result.info);
-        setRouteCoordinates(result.coordinates);
-      }
-    });
-  }, [destination, sessionId, drivers.find((d) => d.id === sessionId)?.lat, drivers.find((d) => d.id === sessionId)?.lng]);
+    // Throttle: re-fetch at most every 15s for position changes, instant for new destination
+    const now = Date.now();
+    const timerId = setTimeout(() => {
+      if (Date.now() - lastRouteFetchRef.current < 10000) return;
+      lastRouteFetchRef.current = Date.now();
+      setRouteLoading(true);
+      fetchRoute(self.lat, self.lng, destination.lat, destination.lng).then((result) => {
+        setRouteLoading(false);
+        if (result) {
+          setRouteInfo(result.info);
+          setRouteCoordinates(result.coordinates);
+        }
+      });
+    }, lastRouteFetchRef.current === 0 ? 0 : 10000);
+
+    return () => clearTimeout(timerId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [destination, sessionId]);
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">
