@@ -20,10 +20,14 @@ const Index = () => {
     convoyId,
     drivers,
     gpsActive,
+    destination,
+    isLeader,
     sessionId,
     handleCreate,
     handleJoin,
     handleLeave,
+    handleSetDestination,
+    handleClearDestination,
   } = useConvoy(center);
 
   const handleCenterOnMe = useCallback(() => {
