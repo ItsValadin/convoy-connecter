@@ -23,6 +23,7 @@ interface ConvoyMapProps {
   drivers: Driver[];
   center: [number, number];
   destination?: Destination | null;
+  routeCoordinates?: [number, number][] | null;
   isLeader?: boolean;
   onMapReady?: (map: L.Map) => void;
   onMapClick?: (lat: number, lng: number) => void;
