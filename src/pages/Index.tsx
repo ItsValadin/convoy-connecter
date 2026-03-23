@@ -17,6 +17,9 @@ const Index = () => {
   const [center, setCenter] = useState<[number, number]>(DEFAULT_CENTER);
   const hasSetInitialCenter = useRef(false);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
+  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][] | null>(null);
+  const [routeLoading, setRouteLoading] = useState(false);
 
   const {
     convoyCode,
