@@ -86,7 +86,7 @@ const ConvoyMap = ({ drivers, center }: ConvoyMapProps) => {
       const existing = markersRef.current.get(driver.id);
       if (existing) {
         existing.setLatLng([driver.lat, driver.lng]);
-        existing.setIcon(createDriverIcon(driver.color, driver.isLeader));
+        existing.setIcon(createDriverIcon(driver.color, driver.isLeader, driver.speed, driver.heading));
       } else {
         const marker = L.marker([driver.lat, driver.lng], {
           icon: createDriverIcon(driver.color, driver.isLeader),
