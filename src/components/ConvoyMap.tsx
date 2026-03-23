@@ -84,7 +84,7 @@ const ConvoyMap = ({ drivers, center, destination, isLeader, onMapReady, onMapCl
   const polylineRef = useRef<L.Polyline | null>(null);
   const destinationMarkerRef = useRef<L.Marker | null>(null);
   const onMapClickRef = useRef(onMapClick);
-
+  onMapClickRef.current = onMapClick;
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
