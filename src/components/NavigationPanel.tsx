@@ -36,7 +36,7 @@ const formatDuration = (seconds: number) => {
   return `${hrs}h ${remainMins}m`;
 };
 
-const NavigationPanel = ({ route, loading }: NavigationPanelProps) => {
+const NavigationPanel = ({ route, loading, liveEtaSec, arrivalTime }: NavigationPanelProps) => {
   const [expanded, setExpanded] = useState(false);
 
   if (!route && !loading) return null;
