@@ -222,6 +222,7 @@ const Index = () => {
         convoyCode={convoyCode}
         onCreateConvoy={handleCreate}
         onJoinConvoy={handleJoin}
+        onLeaveConvoy={handleLeave}
       />
 
       {/* Bottom status bar */}
