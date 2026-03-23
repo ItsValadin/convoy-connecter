@@ -18,22 +18,35 @@ interface ConvoyMapProps {
   center: [number, number];
 }
 
-const createDriverIcon = (color: string, isLeader: boolean) => {
+const createDriverIcon = (color: string, isLeader: boolean, speed?: number | null, heading?: number | null) => {
   const size = isLeader ? 18 : 14;
-  const ring = isLeader ? `<circle cx="20" cy="20" r="18" fill="none" stroke="${color}" stroke-width="2" opacity="0.4"><animate attributeName="r" from="14" to="22" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" from="0.5" to="0" dur="2s" repeatCount="indefinite"/></circle>` : "";
-  
-  const svg = `<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+  const hasHeading = typeof heading === "number" && heading >= 0;
+  const hasSpeed = typeof speed === "number" && speed >= 0;
+  const speedKmh = hasSpeed ? Math.round(speed! * 3.6) : null;
+  const rotation = hasHeading ? heading! : 0;
+
+  const ring = isLeader ? `<circle cx="30" cy="30" r="18" fill="none" stroke="${color}" stroke-width="2" opacity="0.4"><animate attributeName="r" from="14" to="22" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" from="0.5" to="0" dur="2s" repeatCount="indefinite"/></circle>` : "";
+
+  // Heading arrow (triangle pointing up, rotated by heading)
+  const headingArrow = hasHeading ? `<g transform="rotate(${rotation}, 30, 30)"><polygon points="30,4 36,16 24,16" fill="${color}" opacity="0.85"/></g>` : "";
+
+  // Speed label
+  const speedLabel = speedKmh !== null ? `<text x="30" y="52" text-anchor="middle" font-family="monospace" font-size="9" font-weight="bold" fill="${color}">${speedKmh} km/h</text>` : "";
+
+  const svg = `<svg width="60" height="58" viewBox="0 0 60 58" xmlns="http://www.w3.org/2000/svg">
     ${ring}
-    <circle cx="20" cy="20" r="${size / 2 + 4}" fill="${color}" opacity="0.2"/>
-    <circle cx="20" cy="20" r="${size / 2}" fill="${color}"/>
-    ${isLeader ? '<polygon points="20,8 24,16 16,16" fill="white" opacity="0.9"/>' : ""}
+    ${headingArrow}
+    <circle cx="30" cy="30" r="${size / 2 + 4}" fill="${color}" opacity="0.2"/>
+    <circle cx="30" cy="30" r="${size / 2}" fill="${color}"/>
+    ${isLeader && !hasHeading ? '<polygon points="30,18 34,26 26,26" fill="white" opacity="0.9"/>' : ""}
+    ${speedLabel}
   </svg>`;
-  
+
   return L.divIcon({
     html: svg,
     className: "convoy-marker",
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
+    iconSize: [60, 58],
+    iconAnchor: [30, 30],
   });
 };
 
