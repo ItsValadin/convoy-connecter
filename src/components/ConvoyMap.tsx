@@ -60,11 +60,30 @@ const createDriverIcon = (color: string, isLeader: boolean, speed?: number | nul
   });
 };
 
-const ConvoyMap = ({ drivers, center, onMapReady }: ConvoyMapProps) => {
+const createDestinationIcon = () => {
+  const svg = `<svg width="40" height="50" viewBox="0 0 40 50" xmlns="http://www.w3.org/2000/svg">
+    <path d="M20 0 C9 0 0 9 0 20 C0 35 20 50 20 50 C20 50 40 35 40 20 C40 9 31 0 20 0Z" fill="#ef4444" opacity="0.9"/>
+    <circle cx="20" cy="18" r="7" fill="white" opacity="0.9"/>
+    <circle cx="20" cy="18" r="7" fill="none" stroke="#ef4444" stroke-width="2" opacity="0.5">
+      <animate attributeName="r" from="7" to="12" dur="2s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" from="0.5" to="0" dur="2s" repeatCount="indefinite"/>
+    </circle>
+  </svg>`;
+  return L.divIcon({
+    html: svg,
+    className: "convoy-marker",
+    iconSize: [40, 50],
+    iconAnchor: [20, 50],
+  });
+};
+
+const ConvoyMap = ({ drivers, center, destination, isLeader, onMapReady, onMapClick }: ConvoyMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
   const polylineRef = useRef<L.Polyline | null>(null);
+  const destinationMarkerRef = useRef<L.Marker | null>(null);
+  const onMapClickRef = useRef(onMapClick);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
