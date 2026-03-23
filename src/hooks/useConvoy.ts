@@ -32,6 +32,7 @@ export const useConvoy = (initialCenter: [number, number]) => {
   const watchIdRef = useRef<number | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const positionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const dbIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const latestPositionRef = useRef<{ lat: number; lng: number; speed: number | null; heading: number | null }>({
     lat: initialCenter[0], lng: initialCenter[1], speed: null, heading: null,
   });
