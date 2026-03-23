@@ -5,6 +5,7 @@ import ConvoyChat from "@/components/ConvoyChat";
 import DestinationSearch from "@/components/DestinationSearch";
 import ConvoyPanel from "@/components/ConvoyPanel";
 import NavigationPanel, { type RouteInfo } from "@/components/NavigationPanel";
+import { useNavigationAlerts } from "@/hooks/useNavigationAlerts";
 import { toast } from "sonner";
 import { Crosshair } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -90,6 +91,15 @@ const Index = () => {
     return () => clearTimeout(timerId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [destination, sessionId]);
+
+  // Voice turn-by-turn alerts
+  const self = drivers.find((d) => d.id === sessionId);
+  useNavigationAlerts(
+    routeInfo?.steps,
+    self?.lat ?? null,
+    self?.lng ?? null,
+    !!convoyCode && !!destination
+  );
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">

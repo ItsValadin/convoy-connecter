@@ -1,7 +1,7 @@
 import type { RouteInfo, RouteStep } from "@/components/NavigationPanel";
 
 interface OSRMStep {
-  maneuver: { instruction: string };
+  maneuver: { instruction: string; location: [number, number] };
   distance: number;
   duration: number;
 }
@@ -39,6 +39,7 @@ export const fetchRoute = async (
         instruction: s.maneuver.instruction,
         distance: s.distance,
         duration: s.duration,
+        location: [s.maneuver.location[1], s.maneuver.location[0]] as [number, number],
       }));
 
     // OSRM returns [lng, lat], convert to [lat, lng]
