@@ -226,6 +226,14 @@ const ConvoyPanel = ({ drivers, convoyCode, onCreateConvoy, onJoinConvoy, onLeav
           </div>
         )}
       </div>
+
+      {/* Toggle button */}
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className={`mt-2 flex-shrink-0 w-8 h-8 rounded-lg bg-card/95 backdrop-blur-xl border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 transition-all duration-300 ${collapsed ? "absolute left-0 top-0 mt-0" : ""}`}
+      >
+        {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+      </button>
     </div>
   );
 };
