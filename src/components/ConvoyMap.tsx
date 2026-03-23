@@ -175,7 +175,7 @@ const ConvoyMap = ({ drivers, center, destination, isLeader, onMapReady, onMapCl
     }
   }, [destination]);
 
-
+  return (
     <>
       <style>{`
         .convoy-marker { background: none !important; border: none !important; }
