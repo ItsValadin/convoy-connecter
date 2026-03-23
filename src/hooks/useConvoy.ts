@@ -284,13 +284,14 @@ export const useConvoy = (initialCenter: [number, number]) => {
     toast.success(`Joined convoy ${code}!`);
   }, [subscribeToConvoy, startGpsTracking, startPositionSync]);
 
-  const handleSetDestination = useCallback(async (lat: number, lng: number) => {
+  const handleSetDestination = useCallback(async (lat: number, lng: number, label?: string) => {
     if (!convoyId || !isLeader) return;
+    const destinationLabel = label || null;
     await supabase
       .from("convoys")
-      .update({ destination_lat: lat, destination_lng: lng, destination_label: null })
+      .update({ destination_lat: lat, destination_lng: lng, destination_label: destinationLabel })
       .eq("id", convoyId);
-    setDestination({ lat, lng, label: null });
+    setDestination({ lat, lng, label: destinationLabel });
     toast.success("Destination set!");
   }, [convoyId, isLeader]);
 
