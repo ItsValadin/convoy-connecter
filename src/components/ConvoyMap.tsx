@@ -152,7 +152,30 @@ const ConvoyMap = ({ drivers, center, destination, isLeader, onMapReady, onMapCl
     }
   }, [drivers]);
 
-  return (
+  // Destination marker
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    if (destinationMarkerRef.current) {
+      mapRef.current.removeLayer(destinationMarkerRef.current);
+      destinationMarkerRef.current = null;
+    }
+
+    if (destination) {
+      destinationMarkerRef.current = L.marker([destination.lat, destination.lng], {
+        icon: createDestinationIcon(),
+      })
+        .bindTooltip(destination.label || "Destination", {
+          permanent: true,
+          direction: "top",
+          className: "convoy-destination-tooltip",
+          offset: [0, -50],
+        })
+        .addTo(mapRef.current);
+    }
+  }, [destination]);
+
+
     <>
       <style>{`
         .convoy-marker { background: none !important; border: none !important; }
