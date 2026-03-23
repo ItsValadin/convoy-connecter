@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, Copy, Plus, LogIn, Navigation, Crown, Circle, LogOut } from "lucide-react";
+import { Users, Copy, Plus, LogIn, Navigation, Crown, Circle, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -41,6 +41,7 @@ const ConvoyPanel = ({ drivers, convoyCode, onCreateConvoy, onJoinConvoy, onLeav
   const [joinCode, setJoinCode] = useState("");
   const [mode, setMode] = useState<"idle" | "create" | "join">("idle");
   const [copied, setCopied] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   const handleCopy = () => {
     if (convoyCode) {
@@ -53,7 +54,9 @@ const ConvoyPanel = ({ drivers, convoyCode, onCreateConvoy, onJoinConvoy, onLeav
   const isInConvoy = convoyCode !== null;
 
   return (
-    <div className="absolute top-4 left-4 z-10 w-80">
+    <div className="absolute top-4 left-4 z-10 flex items-start gap-2">
+      {/* Panel */}
+      <div className={`w-80 transition-all duration-300 ${collapsed ? "-translate-x-[calc(100%+1rem)] opacity-0 pointer-events-none" : "translate-x-0 opacity-100"}`}>
       {/* Header */}
       <div className="bg-card/95 backdrop-blur-xl border border-border rounded-xl overflow-hidden">
         <div className="p-4 border-b border-border">
@@ -223,6 +226,15 @@ const ConvoyPanel = ({ drivers, convoyCode, onCreateConvoy, onJoinConvoy, onLeav
           </div>
         )}
       </div>
+      </div>
+
+      {/* Toggle button */}
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className={`mt-2 flex-shrink-0 w-8 h-8 rounded-lg bg-card/95 backdrop-blur-xl border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 transition-all duration-300 ${collapsed ? "absolute left-0 top-0 mt-0" : ""}`}
+      >
+        {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+      </button>
     </div>
   );
 };
