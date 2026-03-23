@@ -5,9 +5,9 @@ import ConvoyChat from "@/components/ConvoyChat";
 import DestinationSearch from "@/components/DestinationSearch";
 import ConvoyPanel from "@/components/ConvoyPanel";
 import NavigationPanel, { type RouteInfo } from "@/components/NavigationPanel";
-import { useNavigationAlerts } from "@/hooks/useNavigationAlerts";
+import { useNavigationAlerts, haversineDistance } from "@/hooks/useNavigationAlerts";
 import { toast } from "sonner";
-import { Crosshair, Volume2, VolumeX, Navigation } from "lucide-react";
+import { Crosshair, Volume2, VolumeX, Navigation, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConvoy } from "@/hooks/useConvoy";
 import { fetchRoute, type RouteGeometry } from "@/lib/routing";
@@ -101,9 +101,32 @@ const Index = () => {
     !!convoyCode && !!destination
   );
 
+  // Live ETA: scale route duration by remaining distance ratio
+  const liveEta = (() => {
+    if (!routeInfo || !self || !destination) return null;
+    const currentDist = haversineDistance(self.lat, self.lng, destination.lat, destination.lng);
+    const routeStartDist = routeInfo.distance; // total route distance in meters
+    if (routeStartDist <= 0) return null;
+    const ratio = Math.min(currentDist / routeStartDist, 1);
+    const remainingSec = routeInfo.duration * ratio;
+    const arrivalTime = new Date(Date.now() + remainingSec * 1000);
+    return { remainingSec, arrivalTime };
+  })();
+
+  const formatEta = (seconds: number) => {
+    if (seconds < 60) return "< 1 min";
+    const mins = Math.floor(seconds / 60);
+    if (mins < 60) return `${mins} min`;
+    const hrs = Math.floor(mins / 60);
+    return `${hrs}h ${mins % 60}m`;
+  };
+
+  const formatTime = (date: Date) =>
+    date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">
-      {/* Next turn banner */}
+      {/* Next turn banner + ETA */}
       {convoyCode && destination && nextStep && nextStep.instruction && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-lg">
           <div className="bg-primary text-primary-foreground rounded-xl px-4 py-3 flex items-center gap-3 shadow-lg">
@@ -119,6 +142,15 @@ const Index = () => {
                 {" • "}Step {nextStep.stepIndex + 1} of {nextStep.totalSteps}
               </p>
             </div>
+            {liveEta && (
+              <div className="text-right shrink-0">
+                <p className="font-display text-sm font-bold">{formatEta(liveEta.remainingSec)}</p>
+                <p className="font-display text-[10px] opacity-80 flex items-center gap-0.5 justify-end">
+                  <Clock className="w-3 h-3" />
+                  {formatTime(liveEta.arrivalTime)}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -164,7 +196,7 @@ const Index = () => {
       {/* Navigation panel */}
       {convoyCode && destination && (
         <div className="absolute bottom-20 left-4 z-10 flex items-end gap-2">
-          <NavigationPanel route={routeInfo} loading={routeLoading} />
+          <NavigationPanel route={routeInfo} loading={routeLoading} liveEtaSec={liveEta?.remainingSec} arrivalTime={liveEta?.arrivalTime} />
           <Button
             size="icon"
             variant="outline"
