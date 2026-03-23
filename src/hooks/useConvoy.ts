@@ -310,5 +310,4 @@ export const useConvoy = (initialCenter: [number, number]) => {
     handleJoin,
     handleLeave,
   };
-  };
 };
