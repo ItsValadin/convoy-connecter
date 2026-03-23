@@ -174,6 +174,7 @@ const Index = () => {
       <ConvoyPanel
         drivers={drivers}
         convoyCode={convoyCode}
+        destination={destination}
         onCreateConvoy={handleCreate}
         onJoinConvoy={handleJoin}
         onLeaveConvoy={handleLeave}
