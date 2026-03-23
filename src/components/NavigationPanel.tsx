@@ -60,8 +60,13 @@ const NavigationPanel = ({ route, loading, liveEtaSec, arrivalTime }: Navigation
               </span>
               <span className="flex items-center gap-1 font-display text-sm text-muted-foreground">
                 <Clock className="w-3.5 h-3.5" />
-                {formatDuration(route.duration)}
+                {liveEtaSec != null ? formatDuration(liveEtaSec) : formatDuration(route.duration)}
               </span>
+              {arrivalTime && (
+                <span className="font-display text-xs text-primary font-semibold">
+                  ETA {arrivalTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </span>
+              )}
             </div>
             <span className="text-[10px] text-muted-foreground font-display">
               {route.steps.length} steps • tap to {expanded ? "hide" : "show"}
