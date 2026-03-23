@@ -190,6 +190,18 @@ const ConvoyMap = ({ drivers, center, destination, isLeader, onMapReady, onMapCl
           box-shadow: 0 0 10px hsl(152 80% 50% / 0.15) !important;
         }
         .convoy-tooltip::before { border-top-color: hsl(152 80% 50% / 0.3) !important; }
+        .convoy-destination-tooltip {
+          background: hsl(0 80% 50% / 0.9) !important;
+          color: white !important;
+          border: 1px solid hsl(0 80% 60% / 0.5) !important;
+          border-radius: 6px !important;
+          font-family: 'JetBrains Mono', monospace !important;
+          font-size: 11px !important;
+          font-weight: bold !important;
+          padding: 4px 8px !important;
+          box-shadow: 0 0 15px hsl(0 80% 50% / 0.3) !important;
+        }
+        .convoy-destination-tooltip::before { border-top-color: hsl(0 80% 60% / 0.5) !important; }
         .leaflet-control-zoom a {
           background: hsl(220 18% 14% / 0.9) !important;
           color: hsl(152 80% 50%) !important;
