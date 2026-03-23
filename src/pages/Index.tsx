@@ -94,7 +94,7 @@ const Index = () => {
 
   // Voice turn-by-turn alerts
   const self = drivers.find((d) => d.id === sessionId);
-  useNavigationAlerts(
+  const { muted, toggleMute } = useNavigationAlerts(
     routeInfo?.steps,
     self?.lat ?? null,
     self?.lng ?? null,
