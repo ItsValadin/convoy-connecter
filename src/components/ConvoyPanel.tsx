@@ -43,7 +43,7 @@ const formatDistance = (km: number): string => {
   return `${km.toFixed(1)} km`;
 };
 
-const ConvoyPanel = ({ drivers, convoyCode, onCreateConvoy, onJoinConvoy, onLeaveConvoy }: ConvoyPanelProps) => {
+const ConvoyPanel = ({ drivers, convoyCode, destination, onCreateConvoy, onJoinConvoy, onLeaveConvoy }: ConvoyPanelProps) => {
   const [name, setName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [mode, setMode] = useState<"idle" | "create" | "join">("idle");
