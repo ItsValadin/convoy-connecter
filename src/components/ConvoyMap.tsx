@@ -16,6 +16,7 @@ interface Driver {
 interface ConvoyMapProps {
   drivers: Driver[];
   center: [number, number];
+  onMapReady?: (map: L.Map) => void;
 }
 
 const createDriverIcon = (color: string, isLeader: boolean, speed?: number | null, heading?: number | null) => {
