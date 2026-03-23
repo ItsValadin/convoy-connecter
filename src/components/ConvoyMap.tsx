@@ -72,6 +72,7 @@ const ConvoyMap = ({ drivers, center, onMapReady }: ConvoyMapProps) => {
     }).addTo(mapRef.current);
 
     L.control.zoom({ position: "bottomright" }).addTo(mapRef.current);
+    onMapReady?.(mapRef.current);
 
     return () => {
       mapRef.current?.remove();
