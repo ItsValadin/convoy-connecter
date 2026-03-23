@@ -60,12 +60,34 @@ const Index = () => {
     }
   }, []);
 
+  // Fetch route when destination changes or driver position updates significantly
+  useEffect(() => {
+    if (!destination) {
+      setRouteInfo(null);
+      setRouteCoordinates(null);
+      return;
+    }
+
+    const self = drivers.find((d) => d.id === sessionId);
+    if (!self) return;
+
+    setRouteLoading(true);
+    fetchRoute(self.lat, self.lng, destination.lat, destination.lng).then((result) => {
+      setRouteLoading(false);
+      if (result) {
+        setRouteInfo(result.info);
+        setRouteCoordinates(result.coordinates);
+      }
+    });
+  }, [destination, sessionId, drivers.find((d) => d.id === sessionId)?.lat, drivers.find((d) => d.id === sessionId)?.lng]);
+
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">
       <ConvoyMap
         drivers={drivers}
         center={center}
         destination={destination}
+        routeCoordinates={routeCoordinates}
         isLeader={isLeader}
         onMapReady={(map) => { mapInstanceRef.current = map; }}
         onMapClick={isLeader ? handleSetDestination : undefined}
