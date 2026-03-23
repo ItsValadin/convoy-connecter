@@ -7,7 +7,7 @@ import ConvoyPanel from "@/components/ConvoyPanel";
 import NavigationPanel, { type RouteInfo } from "@/components/NavigationPanel";
 import { useNavigationAlerts } from "@/hooks/useNavigationAlerts";
 import { toast } from "sonner";
-import { Crosshair, Volume2, VolumeX } from "lucide-react";
+import { Crosshair, Volume2, VolumeX, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConvoy } from "@/hooks/useConvoy";
 import { fetchRoute, type RouteGeometry } from "@/lib/routing";
