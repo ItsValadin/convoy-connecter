@@ -272,6 +272,10 @@ export const useConvoy = (initialCenter: [number, number]) => {
       clearInterval(positionIntervalRef.current);
       positionIntervalRef.current = null;
     }
+    if (dbIntervalRef.current) {
+      clearInterval(dbIntervalRef.current);
+      dbIntervalRef.current = null;
+    }
 
     setConvoyCode(null);
     setConvoyId(null);
