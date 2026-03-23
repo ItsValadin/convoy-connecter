@@ -14,9 +14,16 @@ interface Driver {
   heading?: number | null;
 }
 
+interface Destination {
+  lat: number;
+  lng: number;
+  label?: string | null;
+}
+
 interface ConvoyPanelProps {
   drivers: Driver[];
   convoyCode: string | null;
+  destination?: Destination | null;
   onCreateConvoy: (name: string) => void;
   onJoinConvoy: (code: string, name: string) => void;
   onLeaveConvoy?: () => void;
