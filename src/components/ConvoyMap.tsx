@@ -124,6 +124,7 @@ const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, o
       if (existing) {
         existing.setLatLng([driver.lat, driver.lng]);
         existing.setIcon(createDriverIcon(driver.color, driver.isLeader, driver.speed, driver.heading));
+        existing.setTooltipContent(driver.name);
       } else {
         const marker = L.marker([driver.lat, driver.lng], {
           icon: createDriverIcon(driver.color, driver.isLeader, driver.speed, driver.heading),
