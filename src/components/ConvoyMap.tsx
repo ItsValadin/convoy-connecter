@@ -29,12 +29,15 @@ interface Destination {
   label?: string | null;
 }
 
+type MapTheme = "dark" | "light";
+
 interface ConvoyMapProps {
   drivers: Driver[];
   center: [number, number];
   destination?: Destination | null;
   routeCoordinates?: [number, number][] | null;
   isLeader?: boolean;
+  mapTheme?: MapTheme;
   onMapReady?: (map: L.Map) => void;
   onMapClick?: (lat: number, lng: number) => void;
 }
