@@ -75,20 +75,39 @@ const Index = () => {
     return () => { map.off("dragstart", onDrag); };
   }, [convoyCode]);
 
-  // Try to get initial position for map center
+  // Try to get initial position for map center and fly to it
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           if (!hasSetInitialCenter.current) {
-            setCenter([pos.coords.latitude, pos.coords.longitude]);
+            const coords: [number, number] = [pos.coords.latitude, pos.coords.longitude];
+            setCenter(coords);
             hasSetInitialCenter.current = true;
+            // Fly map to user's location once GPS resolves
+            if (mapInstanceRef.current) {
+              mapInstanceRef.current.flyTo(coords, 16, { duration: 1 });
+            }
           }
         },
         () => {} // silently fail
       );
     }
   }, []);
+
+  // Auto-pan to user when joining/creating a convoy
+  const hasAutopannedToConvoy = useRef(false);
+  useEffect(() => {
+    if (!convoyCode) {
+      hasAutopannedToConvoy.current = false;
+      return;
+    }
+    const self = drivers.find((d) => d.id === sessionId);
+    if (self && !hasAutomannedToConvoy.current && mapInstanceRef.current) {
+      mapInstanceRef.current.flyTo([self.lat, self.lng], 17, { duration: 0.8 });
+      hasAutomannedToConvoy.current = true;
+    }
+  }, [convoyCode, drivers, sessionId]);
 
   // Fetch route when destination changes (debounced to avoid spamming OSRM)
   const lastRouteFetchRef = useRef(0);
