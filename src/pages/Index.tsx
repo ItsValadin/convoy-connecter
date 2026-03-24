@@ -71,27 +71,12 @@ const Index = () => {
     }
   }, [drivers, sessionId]);
 
-  // Follow mode: track user position continuously + heading-up rotation
+  // Follow mode: track user position continuously (north-up, no rotation)
   useEffect(() => {
-    if (!followMode) {
-      // Reset rotation to north-up when follow mode is off
-      const container = mapInstanceRef.current?.getContainer();
-      if (container) {
-        container.style.transition = "transform 0.5s ease";
-        container.style.transform = "rotate(0deg)";
-      }
-      return;
-    }
+    if (!followMode) return;
     const self = drivers.find((d) => d.id === sessionId);
     if (self && mapInstanceRef.current) {
       mapInstanceRef.current.setView([self.lat, self.lng], mapInstanceRef.current.getZoom(), { animate: true, duration: 0.3 });
-      // Rotate map so heading points up
-      const heading = typeof self.heading === "number" ? self.heading : 0;
-      const container = mapInstanceRef.current.getContainer();
-      if (container) {
-        container.style.transition = "transform 0.3s ease";
-        container.style.transform = `rotate(${-heading}deg)`;
-      }
     }
   }, [followMode, drivers, sessionId]);
 
