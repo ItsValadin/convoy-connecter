@@ -204,7 +204,7 @@ const DestinationSearch = ({
   const handleInputChange = (value: string) => {
     setQuery(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => searchPlaces(value), 400);
+    debounceRef.current = setTimeout(() => searchPlaces(value), 250);
   };
 
   const handleSelectResult = (r: NominatimResult) => {
