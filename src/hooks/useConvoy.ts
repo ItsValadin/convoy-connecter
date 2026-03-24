@@ -421,6 +421,35 @@ export const useConvoy = (initialCenter: [number, number]) => {
     toast("You left the convoy");
   }, [convoyId]);
 
+  // beforeunload: delete self from DB when browser/tab closes
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (convoyId) {
+        // Use sendBeacon for reliable cleanup on tab close
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/convoy_members?convoy_id=eq.${convoyId}&session_id=eq.${sessionIdRef.current}`;
+        fetch(url, {
+          method: "DELETE",
+          headers: {
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          keepalive: true,
+        });
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [convoyId]);
+
+  // Periodic stale member cleanup every 15s
+  useEffect(() => {
+    if (!convoyId) return;
+    const interval = setInterval(() => {
+      fetchMembers(convoyId);
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [convoyId]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
