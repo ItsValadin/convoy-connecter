@@ -325,6 +325,12 @@ export const useConvoy = (initialCenter: [number, number]) => {
     subscribeToConvoy(convoy.id);
     startGpsTracking();
     startPositionSync(convoy.id);
+    // Broadcast join to other members
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "join",
+      payload: { session_id: sessionIdRef.current, name },
+    });
     toast.success(`Joined convoy ${code}!`);
   }, [subscribeToConvoy, startGpsTracking, startPositionSync]);
 
