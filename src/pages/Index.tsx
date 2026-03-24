@@ -8,7 +8,7 @@ import ConvoyPanel from "@/components/ConvoyPanel";
 import NavigationPanel, { type RouteInfo } from "@/components/NavigationPanel";
 import { useNavigationAlerts, haversineDistance } from "@/hooks/useNavigationAlerts";
 import { toast } from "sonner";
-import { Crosshair, Volume2, VolumeX, Navigation, Clock, Gauge, Download, X } from "lucide-react";
+import { Crosshair, Volume2, VolumeX, Navigation, Clock, Gauge, Download, X, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConvoy } from "@/hooks/useConvoy";
 import { fetchRoute, type RouteGeometry } from "@/lib/routing";
@@ -35,6 +35,9 @@ const Index = () => {
   const mapInstanceRef = useRef<L.Map | null>(null);
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [routeCoordinates, setRouteCoordinates] = useState<[number, number][] | null>(null);
+  const [mapTheme, setMapTheme] = useState<"dark" | "light">(() => {
+    return (localStorage.getItem("convoy-map-theme") as "dark" | "light") || "dark";
+  });
   const [routeLoading, setRouteLoading] = useState(false);
 
   const {
@@ -231,6 +234,7 @@ const Index = () => {
         destination={destination}
         routeCoordinates={routeCoordinates}
         isLeader={isLeader}
+        mapTheme={mapTheme}
         onMapReady={(map) => { mapInstanceRef.current = map; }}
         onMapClick={isLeader ? handleSetDestination : undefined}
       />
@@ -309,15 +313,30 @@ const Index = () => {
             </div>
           </div>
       )}
-      <Button
-        size="icon"
-        variant="outline"
-        className={`absolute bottom-28 right-2 sm:right-4 z-10 backdrop-blur-xl border-border ${followMode ? "bg-primary/20 border-primary/50" : "bg-card/90 hover:bg-primary/20 hover:border-primary/50"}`}
-        onClick={handleCenterOnMe}
-        title={followMode ? "Stop following" : "Center on me"}
-      >
-        <Crosshair className={`w-5 h-5 ${followMode ? "text-primary animate-pulse" : "text-primary"}`} />
-      </Button>
+      <div className="absolute bottom-28 right-2 sm:right-4 z-10 flex flex-col gap-2">
+        <Button
+          size="icon"
+          variant="outline"
+          className="bg-card/90 backdrop-blur-xl border-border hover:bg-primary/20 hover:border-primary/50"
+          onClick={() => {
+            const next = mapTheme === "dark" ? "light" : "dark";
+            setMapTheme(next);
+            localStorage.setItem("convoy-map-theme", next);
+          }}
+          title={mapTheme === "dark" ? "Switch to light map" : "Switch to dark map"}
+        >
+          {mapTheme === "dark" ? <Sun className="w-5 h-5 text-primary" /> : <Moon className="w-5 h-5 text-primary" />}
+        </Button>
+        <Button
+          size="icon"
+          variant="outline"
+          className={`backdrop-blur-xl border-border ${followMode ? "bg-primary/20 border-primary/50" : "bg-card/90 hover:bg-primary/20 hover:border-primary/50"}`}
+          onClick={handleCenterOnMe}
+          title={followMode ? "Stop following" : "Center on me"}
+        >
+          <Crosshair className={`w-5 h-5 ${followMode ? "text-primary animate-pulse" : "text-primary"}`} />
+        </Button>
+      </div>
 
       {/* Bottom status bar */}
       {convoyCode && (

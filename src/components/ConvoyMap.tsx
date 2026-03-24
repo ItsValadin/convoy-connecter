@@ -29,12 +29,15 @@ interface Destination {
   label?: string | null;
 }
 
+type MapTheme = "dark" | "light";
+
 interface ConvoyMapProps {
   drivers: Driver[];
   center: [number, number];
   destination?: Destination | null;
   routeCoordinates?: [number, number][] | null;
   isLeader?: boolean;
+  mapTheme?: MapTheme;
   onMapReady?: (map: L.Map) => void;
   onMapClick?: (lat: number, lng: number) => void;
 }
@@ -90,7 +93,12 @@ const createDestinationIcon = () => {
 
 const LERP_DURATION = 1000; // 1 second interpolation
 
-const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, onMapReady, onMapClick }: ConvoyMapProps) => {
+const TILE_URLS: Record<MapTheme, string> = {
+  dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+  light: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+};
+
+const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, mapTheme = "dark", onMapReady, onMapClick }: ConvoyMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const animationsRef = useRef<Map<string, AnimationState>>(new Map());
@@ -98,6 +106,7 @@ const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, o
   const polylineRef = useRef<L.Polyline | null>(null);
   const routePolylineRef = useRef<L.Polyline | null>(null);
   const destinationMarkerRef = useRef<L.Marker | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
   const onMapClickRef = useRef(onMapClick);
   onMapClickRef.current = onMapClick;
   useEffect(() => {
@@ -110,9 +119,9 @@ const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, o
       attributionControl: false,
     });
 
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    tileLayerRef.current = L.tileLayer(TILE_URLS[mapTheme], {
       maxZoom: 19,
-      className: "map-tiles-lighter",
+      className: mapTheme === "dark" ? "map-tiles-lighter" : "",
     }).addTo(mapRef.current);
 
     L.control.zoom({ position: "bottomright" }).addTo(mapRef.current);
@@ -132,6 +141,16 @@ const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, o
       mapRef.current = null;
     };
   }, []);
+
+  // Swap tile layer when theme changes
+  useEffect(() => {
+    if (!mapRef.current || !tileLayerRef.current) return;
+    tileLayerRef.current.remove();
+    tileLayerRef.current = L.tileLayer(TILE_URLS[mapTheme], {
+      maxZoom: 19,
+      className: mapTheme === "dark" ? "map-tiles-lighter" : "",
+    }).addTo(mapRef.current);
+  }, [mapTheme]);
 
   const animateMarker = useCallback((id: string, marker: L.Marker, toLat: number, toLng: number) => {
     const existing = animationsRef.current.get(id);
