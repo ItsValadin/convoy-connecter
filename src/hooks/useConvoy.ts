@@ -317,12 +317,16 @@ export const useConvoy = (initialCenter: [number, number]) => {
   }, [convoyId, isLeader]);
 
   const handleLeave = useCallback(async () => {
-    // Broadcast leave to other members instantly
-    channelRef.current?.send({
-      type: "broadcast",
-      event: "leave",
-      payload: { session_id: sessionIdRef.current },
-    });
+    // Broadcast leave to other members instantly and wait for it
+    try {
+      await channelRef.current?.send({
+        type: "broadcast",
+        event: "leave",
+        payload: { session_id: sessionIdRef.current },
+      });
+    } catch (e) {
+      console.error("Failed to broadcast leave:", e);
+    }
 
     if (convoyId) {
       await supabase
@@ -331,6 +335,9 @@ export const useConvoy = (initialCenter: [number, number]) => {
         .eq("convoy_id", convoyId)
         .eq("session_id", sessionIdRef.current);
     }
+
+    // Small delay to ensure broadcast is received before unsubscribing
+    await new Promise((resolve) => setTimeout(resolve, 300));
 
     // Cleanup
     channelRef.current?.unsubscribe();
