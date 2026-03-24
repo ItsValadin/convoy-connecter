@@ -1,6 +1,16 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+
+interface AnimationState {
+  fromLat: number;
+  fromLng: number;
+  toLat: number;
+  toLng: number;
+  startTime: number;
+  duration: number;
+  rafId: number | null;
+}
 
 interface Driver {
   id: string;
