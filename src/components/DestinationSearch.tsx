@@ -23,18 +23,33 @@ const DestinationSearch = ({ onSelectDestination, onClearDestination, hasDestina
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const searchPlaces = useCallback(async (q: string) => {
-    if (q.length < 3) {
+    if (q.length < 2) {
       setResults([]);
       return;
     }
     setLoading(true);
     try {
+      const params = new URLSearchParams({
+        format: "json",
+        q,
+        limit: "8",
+        addressdetails: "1",
+        dedupe: "1",
+      });
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5`,
+        `https://nominatim.openstreetmap.org/search?${params}`,
         { headers: { "Accept-Language": "en" } }
       );
       const data: SearchResult[] = await res.json();
-      setResults(data);
+      // Deduplicate by rounding coords to ~100m precision
+      const seen = new Set<string>();
+      const unique = data.filter((r) => {
+        const key = `${parseFloat(r.lat).toFixed(3)},${parseFloat(r.lon).toFixed(3)}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      setResults(unique.slice(0, 6));
     } catch {
       setResults([]);
     } finally {
@@ -48,8 +63,14 @@ const DestinationSearch = ({ onSelectDestination, onClearDestination, hasDestina
     debounceRef.current = setTimeout(() => searchPlaces(value), 400);
   };
 
+  const formatLabel = (name: string) => {
+    const parts = name.split(",").map((s) => s.trim());
+    if (parts.length <= 2) return name;
+    return `${parts[0]}, ${parts[1]}`;
+  };
+
   const handleSelect = (result: SearchResult) => {
-    const label = result.display_name.split(",").slice(0, 2).join(",").trim();
+    const label = formatLabel(result.display_name);
     onSelectDestination(parseFloat(result.lat), parseFloat(result.lon), label);
     setQuery(label);
     setResults([]);
@@ -126,7 +147,7 @@ const DestinationSearch = ({ onSelectDestination, onClearDestination, hasDestina
           </div>
         )}
 
-        {query.length >= 3 && !loading && results.length === 0 && (
+        {query.length >= 2 && !loading && results.length === 0 && (
           <div className="px-3 pb-3">
             <span className="text-xs text-muted-foreground">No results found</span>
           </div>
