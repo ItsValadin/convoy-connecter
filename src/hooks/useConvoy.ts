@@ -347,12 +347,12 @@ export const useConvoy = (initialCenter: [number, number]) => {
 
   const handleClearDestination = useCallback(async () => {
     if (!convoyId || !isLeader) return;
+    setDestination(null);
+    toast("Destination cleared");
     await supabase
       .from("convoys")
       .update({ destination_lat: null, destination_lng: null, destination_label: null })
       .eq("id", convoyId);
-    setDestination(null);
-    toast("Destination cleared");
   }, [convoyId, isLeader]);
 
   const handleLeave = useCallback(async () => {
