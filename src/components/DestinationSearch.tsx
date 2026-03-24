@@ -79,7 +79,7 @@ const DestinationSearch = ({ onSelectDestination, onClearDestination, hasDestina
 
   if (!isOpen) {
     return (
-      <div className="absolute top-4 right-4 z-10 flex gap-2">
+      <div className="absolute top-4 right-2 sm:right-4 z-10 flex gap-1.5 sm:gap-2">
         <Button
           size="sm"
           variant="outline"
