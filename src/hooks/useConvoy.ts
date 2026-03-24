@@ -93,6 +93,10 @@ export const useConvoy = (initialCenter: [number, number]) => {
           return updated;
         });
       })
+      .on("broadcast", { event: "join" }, ({ payload }) => {
+        if (payload.session_id === sessionIdRef.current) return;
+        toast.success(`${payload.name} joined the convoy`);
+      })
       .on("broadcast", { event: "leave" }, ({ payload }) => {
         setDrivers((prev) => {
           const leavingDriver = prev.find((d) => d.id === payload.session_id);
