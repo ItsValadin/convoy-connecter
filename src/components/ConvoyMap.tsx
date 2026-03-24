@@ -119,9 +119,9 @@ const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, m
       attributionControl: false,
     });
 
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    tileLayerRef.current = L.tileLayer(TILE_URLS[mapTheme], {
       maxZoom: 19,
-      className: "map-tiles-lighter",
+      className: mapTheme === "dark" ? "map-tiles-lighter" : "",
     }).addTo(mapRef.current);
 
     L.control.zoom({ position: "bottomright" }).addTo(mapRef.current);
