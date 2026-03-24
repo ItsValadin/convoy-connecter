@@ -13,6 +13,7 @@ interface DestinationSearchProps {
   onSelectDestination: (lat: number, lng: number, label: string) => void;
   onClearDestination: () => void;
   hasDestination: boolean;
+  hasBanner?: boolean;
 }
 
 const DestinationSearch = ({ onSelectDestination, onClearDestination, hasDestination }: DestinationSearchProps) => {
