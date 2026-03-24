@@ -103,6 +103,10 @@ export const useConvoy = (initialCenter: [number, number]) => {
         toast.success(`${payload.name} joined the convoy`);
       })
       .on("broadcast", { event: "leave" }, ({ payload }) => {
+        // Mark as recently left so fetchMembers won't re-add them
+        recentlyLeftRef.current.add(payload.session_id);
+        setTimeout(() => recentlyLeftRef.current.delete(payload.session_id), 10000);
+
         setDrivers((prev) => {
           const leavingDriver = prev.find((d) => d.id === payload.session_id);
           if (leavingDriver) {
