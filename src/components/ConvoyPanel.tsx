@@ -50,6 +50,15 @@ const ConvoyPanel = ({ drivers, convoyCode, destination, onCreateConvoy, onJoinC
   const [copied, setCopied] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
+  // Reset form when leaving convoy
+  useEffect(() => {
+    if (!convoyCode) {
+      setMode("idle");
+      setName("");
+      setJoinCode("");
+    }
+  }, [convoyCode]);
+
   const handleCopy = () => {
     if (convoyCode) {
       navigator.clipboard.writeText(convoyCode);
