@@ -103,7 +103,26 @@ export const useConvoy = (initialCenter: [number, number]) => {
               toast(`${leavingDriver.name} left the convoy`);
             }
           }
-          return prev.filter((d) => d.id !== payload.session_id);
+          const remaining = prev.filter((d) => d.id !== payload.session_id);
+
+          // Auto-promote the earliest joined member to leader if the leader left
+          if (leavingDriver?.isLeader && remaining.length > 0) {
+            const newLeader = remaining[0];
+            remaining[0] = { ...newLeader, isLeader: true };
+
+            // Update DB to reflect new leader
+            if (newLeader.id === sessionIdRef.current) {
+              setIsLeader(true);
+              toast.success("You are now the convoy leader!");
+              supabase
+                .from("convoy_members")
+                .update({ is_leader: true })
+                .eq("session_id", newLeader.id)
+                .then();
+            }
+          }
+
+          return remaining;
         });
       })
       .subscribe();
