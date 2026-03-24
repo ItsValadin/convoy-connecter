@@ -13,9 +13,10 @@ interface DestinationSearchProps {
   onSelectDestination: (lat: number, lng: number, label: string) => void;
   onClearDestination: () => void;
   hasDestination: boolean;
+  hasBanner?: boolean;
 }
 
-const DestinationSearch = ({ onSelectDestination, onClearDestination, hasDestination }: DestinationSearchProps) => {
+const DestinationSearch = ({ onSelectDestination, onClearDestination, hasDestination, hasBanner }: DestinationSearchProps) => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -79,7 +80,7 @@ const DestinationSearch = ({ onSelectDestination, onClearDestination, hasDestina
 
   if (!isOpen) {
     return (
-      <div className="absolute top-4 right-2 sm:right-4 z-10 flex gap-1.5 sm:gap-2">
+      <div className={`absolute right-2 sm:right-4 z-10 flex gap-1.5 sm:gap-2 ${hasBanner ? "top-[4.5rem] sm:top-4" : "top-4"}`}>
         <Button
           size="sm"
           variant="outline"
@@ -104,7 +105,7 @@ const DestinationSearch = ({ onSelectDestination, onClearDestination, hasDestina
   }
 
   return (
-    <div className="absolute top-4 right-2 sm:right-4 z-20 w-[min(20rem,calc(100vw-1rem))]">
+    <div className={`absolute right-2 sm:right-4 z-20 w-[min(20rem,calc(100vw-1rem))] ${hasBanner ? "top-[4.5rem] sm:top-4" : "top-4"}`}>
       <div className="bg-card/95 backdrop-blur-xl border border-border rounded-xl overflow-hidden">
         <div className="p-3 flex items-center gap-2">
           <MapPin className="w-4 h-4 text-destructive flex-shrink-0" />
