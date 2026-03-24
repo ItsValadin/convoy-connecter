@@ -105,57 +105,57 @@ const ConvoyPanel = ({ drivers, convoyCode, destination, onCreateConvoy, onJoinC
 
         {/* Driver list */}
         {isInConvoy && (
-          <div className="p-3 max-h-64 overflow-y-auto">
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1.5">
-              <Users className="w-3 h-3" /> Drivers
-            </p>
-            <div className="space-y-2">
-              {drivers.map((driver) => {
-                const leader = drivers.find((d) => d.isLeader);
-                const distToLeader = leader && !driver.isLeader
-                  ? formatDistance(haversineDistance(driver.lat, driver.lng, leader.lat, leader.lng))
-                  : null;
-                const distToDest = destination
-                  ? formatDistance(haversineDistance(driver.lat, driver.lng, destination.lat, destination.lng))
-                  : null;
-                return (
-                  <div
-                    key={driver.id}
-                    className="flex items-center gap-3 p-2 rounded-lg bg-secondary/40 border border-border/50"
-                  >
+          <div className="p-3 space-y-3">
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1.5">
+                <Users className="w-3 h-3" /> Drivers
+              </p>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {drivers.map((driver) => {
+                  const leader = drivers.find((d) => d.isLeader);
+                  const distToLeader = leader && !driver.isLeader
+                    ? formatDistance(haversineDistance(driver.lat, driver.lng, leader.lat, leader.lng))
+                    : null;
+                  const distToDest = destination
+                    ? formatDistance(haversineDistance(driver.lat, driver.lng, destination.lat, destination.lng))
+                    : null;
+                  return (
                     <div
-                      className="w-3 h-3 rounded-full pulse-marker"
-                      style={{ backgroundColor: driver.color }}
-                    />
-                    <span className="font-display text-sm text-foreground flex-1">{driver.name}</span>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {distToDest && (
-                        <span className="font-display text-[10px] text-primary flex items-center gap-0.5" title="Distance to destination">
-                          <MapPin className="w-2.5 h-2.5" />{distToDest}
-                        </span>
-                      )}
-                      {distToLeader && (
-                        <span className="font-display text-[10px] text-muted-foreground">{distToLeader}</span>
+                      key={driver.id}
+                      className="flex items-center gap-3 p-2 rounded-lg bg-secondary/40 border border-border/50"
+                    >
+                      <div
+                        className="w-3 h-3 rounded-full pulse-marker"
+                        style={{ backgroundColor: driver.color }}
+                      />
+                      <span className="font-display text-sm text-foreground flex-1">{driver.name}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {distToDest && (
+                          <span className="font-display text-[10px] text-primary flex items-center gap-0.5" title="Distance to destination">
+                            <MapPin className="w-2.5 h-2.5" />{distToDest}
+                          </span>
+                        )}
+                        {distToLeader && (
+                          <span className="font-display text-[10px] text-muted-foreground">{distToLeader}</span>
+                        )}
+                      </div>
+                      {driver.isLeader ? (
+                        <Crown className="w-3.5 h-3.5 text-convoy-amber" />
+                      ) : (
+                        <Circle className="w-2.5 h-2.5 text-muted-foreground" />
                       )}
                     </div>
-                    {driver.isLeader ? (
-                      <Crown className="w-3.5 h-3.5 text-convoy-amber" />
-                    ) : (
-                      <Circle className="w-2.5 h-2.5 text-muted-foreground" />
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-            <div className="px-3 pb-3">
-              <Button
-                variant="outline"
-                className="w-full border-destructive/50 text-destructive hover:bg-destructive/10 font-display"
-                onClick={onLeaveConvoy}
-              >
-                <LogOut className="w-4 h-4 mr-2" /> Leave Convoy
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              className="w-full border-destructive/50 text-destructive hover:bg-destructive/10 font-display"
+              onClick={onLeaveConvoy}
+            >
+              <LogOut className="w-4 h-4 mr-2" /> Leave Convoy
+            </Button>
           </div>
         )}
 
