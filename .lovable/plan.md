@@ -1,55 +1,36 @@
 
 
-# Plan: Convert Convoy to a PWA (Installable Web App)
+# Plan: Improve Destination Search
 
-## What You'll Get
-Your app will be installable directly from the browser to your phone's home screen. It will work offline, load fast, and feel like a native app — no app store needed. Later, we can convert it to a full native app for the App Store / Google Play.
+## What Changes
 
-## Steps
+Three improvements to make search more useful and forgiving:
 
-### 1. Install the PWA plugin
-Add `vite-plugin-pwa` as a dependency to generate the service worker and manifest automatically.
+### 1. Bias results toward your location
+Pass the user's current GPS coordinates to Nominatim using the `viewbox` and `bounded` parameters. This ensures search results prioritize nearby places instead of returning random locations across the world.
 
-### 2. Configure Vite for PWA
-Update `vite.config.ts` to add the `VitePWA` plugin with:
-- App name: "Convoy"
-- Theme color: `#171c26`
-- Background color: `#171c26`
-- Display mode: `standalone`
-- Auto-register service worker
-- Runtime caching for map tiles (OpenStreetMap) so the base map works offline
-- `navigateFallbackDenylist: [/^\/~oauth/]` to protect auth redirects
+### 2. Fuzzy/typo-tolerant search
+Switch from the basic `q` parameter to using Nominatim's `q` with `fuzzyMatch=1` (if available) or, more practically, use the **Photon geocoder** (`photon.komoot.de`) instead of Nominatim. Photon is free, based on OpenStreetMap data, supports typo tolerance natively, and is less sensitive to exact spelling/spacing. It also returns structured place types (city, street, POI) for better result display.
 
-### 3. Generate PWA icons
-Create a set of icon files in `public/` for the manifest:
-- `pwa-192x192.png` and `pwa-512x512.png` (standard PWA sizes)
-- `apple-touch-icon-180x180.png` for iOS
-These will be simple branded icons with the Convoy theme colors.
+### 3. Recent destinations
+Store the last 5-10 selected destinations in `localStorage`. When the search box opens with an empty query, show recent destinations so users can quickly re-select a previous place.
 
-### 4. Update index.html
-- Add `<link rel="apple-touch-icon">` tag
-- Fix the page title from "Convoy — Live Group NavigationLovable App" to "Convoy — Live Group Navigation"
-
-### 5. Create an Install page (`/install`)
-A simple page at `/install` that:
-- Detects if the app is already installed
-- Shows install instructions (iOS: Share → Add to Home Screen; Android: browser menu → Install)
-- Triggers the native install prompt on supported browsers
-
-### 6. Add install prompt to main app
-Add a subtle install banner or button that appears for users who haven't installed the app yet, prompting them to add it to their home screen.
+### 4. Better result display
+Show the place type (city, restaurant, gas station, etc.) and a shortened address instead of the raw `display_name` blob, making it easier to tell results apart.
 
 ---
 
 ## Technical Details
 
-**Files to create:**
-- `public/pwa-192x192.png`, `public/pwa-512x512.png`, `public/apple-touch-icon-180x180.png`
-- `src/pages/Install.tsx`
-
 **Files to modify:**
-- `package.json` — add `vite-plugin-pwa`
-- `vite.config.ts` — add VitePWA plugin config
-- `index.html` — apple-touch-icon link, fix title
-- `src/App.tsx` — add `/install` route
+- `src/components/DestinationSearch.tsx` — switch to Photon API, add location biasing, recent destinations from localStorage, improve result formatting
+- `src/pages/Index.tsx` — pass user's current position to DestinationSearch
+
+**Photon API format:**
+```
+GET https://photon.komoot.de/api/?q=starbucks&lat=34.05&lon=-118.24&limit=6
+```
+Returns structured results with `name`, `city`, `state`, `country`, `osm_value` (place type), and coordinates — much better than Nominatim's flat `display_name`.
+
+**No database changes needed** — recent destinations stored in localStorage.
 
