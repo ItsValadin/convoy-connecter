@@ -37,14 +37,40 @@ const Index = () => {
     handleClearDestination,
   } = useConvoy(center);
 
+  const [followMode, setFollowMode] = useState(false);
+
   const handleCenterOnMe = useCallback(() => {
     const self = drivers.find((d) => d.id === sessionId);
     if (self && mapInstanceRef.current) {
-      mapInstanceRef.current.flyTo([self.lat, self.lng], 16, { duration: 0.8 });
+      setFollowMode((prev) => {
+        const next = !prev;
+        if (next) {
+          mapInstanceRef.current!.flyTo([self.lat, self.lng], 18, { duration: 0.8 });
+        }
+        return next;
+      });
     } else {
       toast.error("No GPS position yet");
     }
   }, [drivers, sessionId]);
+
+  // Follow mode: track user position continuously
+  useEffect(() => {
+    if (!followMode) return;
+    const self = drivers.find((d) => d.id === sessionId);
+    if (self && mapInstanceRef.current) {
+      mapInstanceRef.current.setView([self.lat, self.lng], mapInstanceRef.current.getZoom(), { animate: true, duration: 0.3 });
+    }
+  }, [followMode, drivers, sessionId]);
+
+  // Disable follow mode on user drag
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    const onDrag = () => setFollowMode(false);
+    map.on("dragstart", onDrag);
+    return () => { map.off("dragstart", onDrag); };
+  }, [convoyCode]);
 
   // Try to get initial position for map center
   useEffect(() => {
