@@ -127,7 +127,7 @@ const DestinationSearch = ({
 
   const searchPlaces = useCallback(
     async (q: string) => {
-      if (q.length < 2) {
+      if (q.length < 1) {
         setResults([]);
         return;
       }
