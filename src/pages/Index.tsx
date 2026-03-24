@@ -313,15 +313,30 @@ const Index = () => {
             </div>
           </div>
       )}
-      <Button
-        size="icon"
-        variant="outline"
-        className={`absolute bottom-28 right-2 sm:right-4 z-10 backdrop-blur-xl border-border ${followMode ? "bg-primary/20 border-primary/50" : "bg-card/90 hover:bg-primary/20 hover:border-primary/50"}`}
-        onClick={handleCenterOnMe}
-        title={followMode ? "Stop following" : "Center on me"}
-      >
-        <Crosshair className={`w-5 h-5 ${followMode ? "text-primary animate-pulse" : "text-primary"}`} />
-      </Button>
+      <div className="absolute bottom-28 right-2 sm:right-4 z-10 flex flex-col gap-2">
+        <Button
+          size="icon"
+          variant="outline"
+          className="bg-card/90 backdrop-blur-xl border-border hover:bg-primary/20 hover:border-primary/50"
+          onClick={() => {
+            const next = mapTheme === "dark" ? "light" : "dark";
+            setMapTheme(next);
+            localStorage.setItem("convoy-map-theme", next);
+          }}
+          title={mapTheme === "dark" ? "Switch to light map" : "Switch to dark map"}
+        >
+          {mapTheme === "dark" ? <Sun className="w-5 h-5 text-primary" /> : <Moon className="w-5 h-5 text-primary" />}
+        </Button>
+        <Button
+          size="icon"
+          variant="outline"
+          className={`backdrop-blur-xl border-border ${followMode ? "bg-primary/20 border-primary/50" : "bg-card/90 hover:bg-primary/20 hover:border-primary/50"}`}
+          onClick={handleCenterOnMe}
+          title={followMode ? "Stop following" : "Center on me"}
+        >
+          <Crosshair className={`w-5 h-5 ${followMode ? "text-primary animate-pulse" : "text-primary"}`} />
+        </Button>
+      </div>
 
       {/* Bottom status bar */}
       {convoyCode && (
