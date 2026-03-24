@@ -300,6 +300,8 @@ const Index = () => {
           onClearDestination={handleClearDestination}
           hasDestination={!!destination}
           hasBanner={!!destination && !!nextStep?.instruction}
+          userLat={self?.lat ?? null}
+          userLng={self?.lng ?? null}
         />
       )}
 
