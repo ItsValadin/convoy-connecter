@@ -50,6 +50,13 @@ const Index = () => {
         }
         return next;
       });
+    } else if (mapInstanceRef.current && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          mapInstanceRef.current?.flyTo([pos.coords.latitude, pos.coords.longitude], 17, { duration: 0.8 });
+        },
+        () => toast.error("Unable to get your location")
+      );
     } else {
       toast.error("No GPS position yet");
     }
@@ -259,31 +266,26 @@ const Index = () => {
           </Button>
         </div>
       )}
-      {convoyCode && (
-        <>
-          {/* Speed indicator */}
-          {self && (
-            <div className="absolute top-28 sm:top-20 right-2 sm:right-4 z-10 bg-card/90 backdrop-blur-xl border border-border rounded-xl px-3 py-2 flex items-center gap-2 shadow-lg">
-              <Gauge className="w-5 h-5 text-primary" />
-              <div className="text-right">
-                <p className="font-display text-lg font-bold text-foreground leading-none">
-                  {typeof self.speed === "number" ? Math.round(self.speed * 3.6) : 0}
-                </p>
-                <p className="font-display text-[10px] text-muted-foreground leading-tight">km/h</p>
-              </div>
+      {convoyCode && self && (
+          <div className="absolute top-28 sm:top-20 right-2 sm:right-4 z-10 bg-card/90 backdrop-blur-xl border border-border rounded-xl px-3 py-2 flex items-center gap-2 shadow-lg">
+            <Gauge className="w-5 h-5 text-primary" />
+            <div className="text-right">
+              <p className="font-display text-lg font-bold text-foreground leading-none">
+                {typeof self.speed === "number" ? Math.round(self.speed * 3.6) : 0}
+              </p>
+              <p className="font-display text-[10px] text-muted-foreground leading-tight">km/h</p>
             </div>
-          )}
-          <Button
-            size="icon"
-            variant="outline"
-            className={`absolute bottom-28 right-2 sm:right-4 z-10 backdrop-blur-xl border-border ${followMode ? "bg-primary/20 border-primary/50" : "bg-card/90 hover:bg-primary/20 hover:border-primary/50"}`}
-            onClick={handleCenterOnMe}
-            title={followMode ? "Stop following" : "Follow me"}
-          >
-            <Crosshair className={`w-5 h-5 ${followMode ? "text-primary animate-pulse" : "text-primary"}`} />
-          </Button>
-        </>
+          </div>
       )}
+      <Button
+        size="icon"
+        variant="outline"
+        className={`absolute ${convoyCode ? "bottom-28" : "bottom-4"} right-2 sm:right-4 z-10 backdrop-blur-xl border-border ${followMode ? "bg-primary/20 border-primary/50" : "bg-card/90 hover:bg-primary/20 hover:border-primary/50"}`}
+        onClick={handleCenterOnMe}
+        title={followMode ? "Stop following" : "Center on me"}
+      >
+        <Crosshair className={`w-5 h-5 ${followMode ? "text-primary animate-pulse" : "text-primary"}`} />
+      </Button>
 
       {/* Bottom status bar */}
       {convoyCode && (
