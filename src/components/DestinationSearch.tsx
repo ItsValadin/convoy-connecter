@@ -147,7 +147,7 @@ const DestinationSearch = ({ onSelectDestination, onClearDestination, hasDestina
           </div>
         )}
 
-        {query.length >= 3 && !loading && results.length === 0 && (
+        {query.length >= 2 && !loading && results.length === 0 && (
           <div className="px-3 pb-3">
             <span className="text-xs text-muted-foreground">No results found</span>
           </div>
