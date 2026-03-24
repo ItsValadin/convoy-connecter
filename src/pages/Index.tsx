@@ -198,6 +198,13 @@ const Index = () => {
         onMapReady={(map) => { mapInstanceRef.current = map; }}
         onMapClick={isLeader ? handleSetDestination : undefined}
       />
+      {convoyCode && (
+        <OffscreenIndicators
+          drivers={drivers}
+          map={mapInstanceRef.current}
+          sessionId={sessionId}
+        />
+      )}
       <ConvoyPanel
         drivers={drivers}
         convoyCode={convoyCode}
