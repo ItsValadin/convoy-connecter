@@ -238,6 +238,11 @@ const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, o
           color: hsl(152 80% 50%) !important;
           border-color: hsl(220 15% 22%) !important;
         }
+        /* Counter-rotate markers and controls when map is rotated */
+        .leaflet-marker-icon, .leaflet-marker-shadow,
+        .leaflet-control-zoom, .leaflet-control-attribution {
+          transition: transform 0.3s ease;
+        }
       `}</style>
       <div ref={containerRef} className="absolute inset-0 z-0" />
     </>
