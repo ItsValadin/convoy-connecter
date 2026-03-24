@@ -218,15 +218,29 @@ const Index = () => {
         </div>
       )}
       {convoyCode && (
-        <Button
-          size="icon"
-          variant="outline"
-          className="absolute bottom-28 right-2 sm:right-4 z-10 bg-card/90 backdrop-blur-xl border-border hover:bg-primary/20 hover:border-primary/50"
-          onClick={handleCenterOnMe}
-          title="Center on me"
-        >
-          <Crosshair className="w-5 h-5 text-primary" />
-        </Button>
+        <>
+          {/* Speed indicator */}
+          {self && (
+            <div className="absolute top-20 right-2 sm:right-4 z-10 bg-card/90 backdrop-blur-xl border border-border rounded-xl px-3 py-2 flex items-center gap-2 shadow-lg">
+              <Gauge className="w-5 h-5 text-primary" />
+              <div className="text-right">
+                <p className="font-display text-lg font-bold text-foreground leading-none">
+                  {typeof self.speed === "number" ? Math.round(self.speed * 3.6) : 0}
+                </p>
+                <p className="font-display text-[10px] text-muted-foreground leading-tight">km/h</p>
+              </div>
+            </div>
+          )}
+          <Button
+            size="icon"
+            variant="outline"
+            className="absolute bottom-28 right-2 sm:right-4 z-10 bg-card/90 backdrop-blur-xl border-border hover:bg-primary/20 hover:border-primary/50"
+            onClick={handleCenterOnMe}
+            title="Center on me"
+          >
+            <Crosshair className="w-5 h-5 text-primary" />
+          </Button>
+        </>
       )}
 
       {/* Bottom status bar */}
