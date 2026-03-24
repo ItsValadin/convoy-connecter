@@ -234,6 +234,7 @@ const Index = () => {
         destination={destination}
         routeCoordinates={routeCoordinates}
         isLeader={isLeader}
+        mapTheme={mapTheme}
         onMapReady={(map) => { mapInstanceRef.current = map; }}
         onMapClick={isLeader ? handleSetDestination : undefined}
       />
