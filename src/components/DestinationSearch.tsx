@@ -127,7 +127,7 @@ const DestinationSearch = ({
 
   const searchPlaces = useCallback(
     async (q: string) => {
-      if (q.length < 2) {
+      if (q.length < 1) {
         setResults([]);
         return;
       }
@@ -204,7 +204,7 @@ const DestinationSearch = ({
   const handleInputChange = (value: string) => {
     setQuery(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => searchPlaces(value), 400);
+    debounceRef.current = setTimeout(() => searchPlaces(value), 250);
   };
 
   const handleSelectResult = (r: NominatimResult) => {
@@ -257,7 +257,7 @@ const DestinationSearch = ({
     );
   }
 
-  const showRecents = query.length < 2 && recents.length > 0;
+  const showRecents = query.length < 1 && recents.length > 0;
 
   return (
     <div
@@ -351,7 +351,7 @@ const DestinationSearch = ({
           </div>
         )}
 
-        {query.length >= 2 && !loading && results.length === 0 && (
+        {query.length >= 1 && !loading && results.length === 0 && (
           <div className="px-3 pb-3">
             <span className="text-xs text-muted-foreground">No results found</span>
           </div>
