@@ -130,9 +130,10 @@ const ConvoyPanel = ({ drivers, convoyCode, destination, onCreateConvoy, onJoinC
                     ? formatDistance(haversineDistance(driver.lat, driver.lng, destination.lat, destination.lng))
                     : null;
                   return (
-                    <div
+                    <button
                       key={driver.id}
-                      className="flex items-center gap-3 p-2 rounded-lg bg-secondary/40 border border-border/50"
+                      onClick={() => onDriverClick?.(driver)}
+                      className="w-full flex items-center gap-3 p-2 rounded-lg bg-secondary/40 border border-border/50 hover:bg-primary/10 hover:border-primary/30 transition-colors cursor-pointer text-left"
                     >
                       <div
                         className="w-3 h-3 rounded-full pulse-marker"
