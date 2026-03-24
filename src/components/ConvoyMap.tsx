@@ -140,6 +140,15 @@ const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, o
       }
     });
 
+    // Remove markers for drivers no longer in the list
+    const currentIds = new Set(drivers.map((d) => d.id));
+    markersRef.current.forEach((marker, id) => {
+      if (!currentIds.has(id)) {
+        mapRef.current!.removeLayer(marker);
+        markersRef.current.delete(id);
+      }
+    });
+
     // Draw route line between drivers
     if (polylineRef.current) {
       mapRef.current.removeLayer(polylineRef.current);
