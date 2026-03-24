@@ -27,6 +27,7 @@ interface ConvoyPanelProps {
   onCreateConvoy: (name: string) => void;
   onJoinConvoy: (code: string, name: string) => void;
   onLeaveConvoy?: () => void;
+  onDriverClick?: (driver: Driver) => void;
 }
 
 const haversineDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
@@ -43,7 +44,7 @@ const formatDistance = (km: number): string => {
   return `${km.toFixed(1)} km`;
 };
 
-const ConvoyPanel = ({ drivers, convoyCode, destination, onCreateConvoy, onJoinConvoy, onLeaveConvoy }: ConvoyPanelProps) => {
+const ConvoyPanel = ({ drivers, convoyCode, destination, onCreateConvoy, onJoinConvoy, onLeaveConvoy, onDriverClick }: ConvoyPanelProps) => {
   const [name, setName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [mode, setMode] = useState<"idle" | "create" | "join">("idle");
@@ -129,9 +130,10 @@ const ConvoyPanel = ({ drivers, convoyCode, destination, onCreateConvoy, onJoinC
                     ? formatDistance(haversineDistance(driver.lat, driver.lng, destination.lat, destination.lng))
                     : null;
                   return (
-                    <div
+                    <button
                       key={driver.id}
-                      className="flex items-center gap-3 p-2 rounded-lg bg-secondary/40 border border-border/50"
+                      onClick={() => onDriverClick?.(driver)}
+                      className="w-full flex items-center gap-3 p-2 rounded-lg bg-secondary/40 border border-border/50 hover:bg-primary/10 hover:border-primary/30 transition-colors cursor-pointer text-left"
                     >
                       <div
                         className="w-3 h-3 rounded-full pulse-marker"
@@ -153,7 +155,7 @@ const ConvoyPanel = ({ drivers, convoyCode, destination, onCreateConvoy, onJoinC
                       ) : (
                         <Circle className="w-2.5 h-2.5 text-muted-foreground" />
                       )}
-                    </div>
+                    </button>
                   );
                 })}
               </div>

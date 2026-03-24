@@ -178,6 +178,11 @@ const Index = () => {
         onCreateConvoy={handleCreate}
         onJoinConvoy={handleJoin}
         onLeaveConvoy={handleLeave}
+        onDriverClick={(driver) => {
+          if (mapInstanceRef.current) {
+            mapInstanceRef.current.flyTo([driver.lat, driver.lng], 16, { duration: 0.8 });
+          }
+        }}
       />
 
       {/* Chat */}
