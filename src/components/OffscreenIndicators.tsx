@@ -90,6 +90,8 @@ const OffscreenIndicators = ({ drivers, map, sessionId, onArrowClick }: Offscree
           id: driver.id,
           name: driver.name,
           color: driver.color,
+          lat: driver.lat,
+          lng: driver.lng,
           x,
           y,
           angle: (angle * 180) / Math.PI,
