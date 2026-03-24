@@ -16,7 +16,7 @@ interface DestinationSearchProps {
   hasBanner?: boolean;
 }
 
-const DestinationSearch = ({ onSelectDestination, onClearDestination, hasDestination }: DestinationSearchProps) => {
+const DestinationSearch = ({ onSelectDestination, onClearDestination, hasDestination, hasBanner }: DestinationSearchProps) => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
