@@ -94,7 +94,17 @@ export const useConvoy = (initialCenter: [number, number]) => {
         });
       })
       .on("broadcast", { event: "leave" }, ({ payload }) => {
-        setDrivers((prev) => prev.filter((d) => d.id !== payload.session_id));
+        setDrivers((prev) => {
+          const leavingDriver = prev.find((d) => d.id === payload.session_id);
+          if (leavingDriver) {
+            if (leavingDriver.isLeader) {
+              toast.warning(`${leavingDriver.name} (leader) left the convoy`);
+            } else {
+              toast(`${leavingDriver.name} left the convoy`);
+            }
+          }
+          return prev.filter((d) => d.id !== payload.session_id);
+        });
       })
       .subscribe();
   }, []);
