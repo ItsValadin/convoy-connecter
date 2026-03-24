@@ -21,6 +21,8 @@ interface Arrow {
   id: string;
   name: string;
   color: string;
+  lat: number;
+  lng: number;
   x: number;
   y: number;
   angle: number;
