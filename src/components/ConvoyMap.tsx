@@ -88,9 +88,12 @@ const createDestinationIcon = () => {
   });
 };
 
+const LERP_DURATION = 1000; // 1 second interpolation
+
 const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, onMapReady, onMapClick }: ConvoyMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
+  const animationsRef = useRef<Map<string, AnimationState>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
   const polylineRef = useRef<L.Polyline | null>(null);
   const routePolylineRef = useRef<L.Polyline | null>(null);
