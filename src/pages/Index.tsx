@@ -103,9 +103,9 @@ const Index = () => {
       return;
     }
     const self = drivers.find((d) => d.id === sessionId);
-    if (self && !hasAutomannedToConvoy.current && mapInstanceRef.current) {
+    if (self && !hasAutopannedToConvoy.current && mapInstanceRef.current) {
       mapInstanceRef.current.flyTo([self.lat, self.lng], 17, { duration: 0.8 });
-      hasAutomannedToConvoy.current = true;
+      hasAutopannedToConvoy.current = true;
     }
   }, [convoyCode, drivers, sessionId]);
 
