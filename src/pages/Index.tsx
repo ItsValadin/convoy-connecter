@@ -43,17 +43,12 @@ const Index = () => {
   const handleCenterOnMe = useCallback(() => {
     const self = drivers.find((d) => d.id === sessionId);
     if (self && mapInstanceRef.current) {
-      setFollowMode((prev) => {
-        const next = !prev;
-        if (next) {
-          mapInstanceRef.current!.flyTo([self.lat, self.lng], 19, { duration: 0.8 });
-        }
-        return next;
-      });
+      mapInstanceRef.current.flyTo([self.lat, self.lng], 19, { duration: 0.8 });
+      setFollowMode((prev) => !prev);
     } else if (mapInstanceRef.current && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          mapInstanceRef.current?.flyTo([pos.coords.latitude, pos.coords.longitude], 17, { duration: 0.8 });
+          mapInstanceRef.current?.flyTo([pos.coords.latitude, pos.coords.longitude], 19, { duration: 0.8 });
         },
         () => toast.error("Unable to get your location")
       );
