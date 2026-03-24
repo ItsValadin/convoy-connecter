@@ -197,7 +197,7 @@ const Index = () => {
     <div className="relative w-full h-screen overflow-hidden bg-background">
       {/* Next turn banner + ETA */}
       {convoyCode && destination && nextStep && nextStep.instruction && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-lg">
+        <div className="absolute top-[calc(1rem+env(safe-area-inset-top,0px))] sm:top-4 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-lg">
           <div className="bg-primary text-primary-foreground rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-3 shadow-lg">
             <Navigation className="w-6 h-6 shrink-0" />
             <div className="flex-1 min-w-0">
@@ -295,7 +295,7 @@ const Index = () => {
         </div>
       )}
       {convoyCode && self && (
-          <div className="absolute top-28 sm:top-20 right-2 sm:right-4 z-10 bg-card/90 backdrop-blur-xl border border-border rounded-xl px-3 py-2 flex items-center gap-2 shadow-lg">
+          <div className="absolute top-[calc(7rem+env(safe-area-inset-top,0px))] sm:top-20 right-2 sm:right-4 z-10 bg-card/90 backdrop-blur-xl border border-border rounded-xl px-3 py-2 flex items-center gap-2 shadow-lg">
             <Gauge className="w-5 h-5 text-primary" />
             <div className="text-right">
               <p className="font-display text-lg font-bold text-foreground leading-none">
