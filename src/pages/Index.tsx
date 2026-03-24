@@ -17,6 +17,17 @@ import { useNavigate } from "react-router-dom";
 const DEFAULT_CENTER: [number, number] = [34.0522, -118.2437]; // LA
 
 const Index = () => {
+  const navigate = useNavigate();
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
+
+  useEffect(() => {
+    const dismissed = localStorage.getItem("convoy-install-dismissed");
+    if (!isStandalone && !dismissed) {
+      const timer = setTimeout(() => setShowInstallBanner(true), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [isStandalone]);
   const [center, setCenter] = useState<[number, number]>(DEFAULT_CENTER);
   const hasSetInitialCenter = useRef(false);
   const mapInstanceRef = useRef<L.Map | null>(null);
