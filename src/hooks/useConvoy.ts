@@ -93,6 +93,9 @@ export const useConvoy = (initialCenter: [number, number]) => {
           return updated;
         });
       })
+      .on("broadcast", { event: "leave" }, ({ payload }) => {
+        setDrivers((prev) => prev.filter((d) => d.id !== payload.session_id));
+      })
       .subscribe();
   }, []);
 
@@ -314,6 +317,13 @@ export const useConvoy = (initialCenter: [number, number]) => {
   }, [convoyId, isLeader]);
 
   const handleLeave = useCallback(async () => {
+    // Broadcast leave to other members instantly
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "leave",
+      payload: { session_id: sessionIdRef.current },
+    });
+
     if (convoyId) {
       await supabase
         .from("convoy_members")
