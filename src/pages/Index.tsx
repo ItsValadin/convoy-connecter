@@ -45,7 +45,7 @@ const Index = () => {
       setFollowMode((prev) => {
         const next = !prev;
         if (next) {
-          mapInstanceRef.current!.flyTo([self.lat, self.lng], 18, { duration: 0.8 });
+          mapInstanceRef.current!.flyTo([self.lat, self.lng], 19, { duration: 0.8 });
         }
         return next;
       });
