@@ -265,11 +265,11 @@ const Index = () => {
           <Button
             size="icon"
             variant="outline"
-            className="absolute bottom-28 right-2 sm:right-4 z-10 bg-card/90 backdrop-blur-xl border-border hover:bg-primary/20 hover:border-primary/50"
+            className={`absolute bottom-28 right-2 sm:right-4 z-10 backdrop-blur-xl border-border ${followMode ? "bg-primary/20 border-primary/50" : "bg-card/90 hover:bg-primary/20 hover:border-primary/50"}`}
             onClick={handleCenterOnMe}
-            title="Center on me"
+            title={followMode ? "Stop following" : "Follow me"}
           >
-            <Crosshair className="w-5 h-5 text-primary" />
+            <Crosshair className={`w-5 h-5 ${followMode ? "text-primary animate-pulse" : "text-primary"}`} />
           </Button>
         </>
       )}
