@@ -121,7 +121,7 @@ const ConvoyPanel = ({ drivers, convoyCode, destination, onCreateConvoy, onJoinC
                 <Users className="w-3 h-3" /> Drivers
               </p>
               <div className="space-y-2 max-h-48 overflow-y-auto">
-                {drivers.map((driver) => {
+                {[...drivers].sort((a, b) => a.id.localeCompare(b.id)).map((driver) => {
                   const leader = drivers.find((d) => d.isLeader);
                   const distToLeader = leader && !driver.isLeader
                     ? formatDistance(haversineDistance(driver.lat, driver.lng, leader.lat, leader.lng))
