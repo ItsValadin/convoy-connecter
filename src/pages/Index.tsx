@@ -324,6 +324,34 @@ const Index = () => {
           </span>
         </div>
       )}
+      {/* Install PWA banner */}
+      {showInstallBanner && (
+        <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-sm animate-in slide-in-from-bottom-4 fade-in duration-500">
+          <div className="bg-card/95 backdrop-blur-xl border border-primary/30 rounded-xl px-4 py-3 flex items-center gap-3 shadow-lg">
+            <Download className="w-5 h-5 text-primary shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground">Install Convoy</p>
+              <p className="text-xs text-muted-foreground">Add to home screen for the best experience</p>
+            </div>
+            <Button
+              size="sm"
+              className="shrink-0 h-8 text-xs"
+              onClick={() => navigate("/install")}
+            >
+              Install
+            </Button>
+            <button
+              onClick={() => {
+                setShowInstallBanner(false);
+                localStorage.setItem("convoy-install-dismissed", "true");
+              }}
+              className="text-muted-foreground hover:text-foreground p-1"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
