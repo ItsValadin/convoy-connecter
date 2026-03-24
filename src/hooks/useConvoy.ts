@@ -172,6 +172,14 @@ export const useConvoy = (initialCenter: [number, number]) => {
         const { latitude, longitude, speed, heading } = position.coords;
         setGpsActive(true);
         latestPositionRef.current = { lat: latitude, lng: longitude, speed, heading };
+        // Update self in drivers list immediately so the marker moves locally
+        setDrivers((prev) => {
+          const idx = prev.findIndex((d) => d.id === sessionIdRef.current);
+          if (idx === -1) return prev;
+          const updated = [...prev];
+          updated[idx] = { ...updated[idx], lat: latitude, lng: longitude, speed, heading };
+          return updated;
+        });
       },
       (error) => {
         console.error("GPS error:", error);
