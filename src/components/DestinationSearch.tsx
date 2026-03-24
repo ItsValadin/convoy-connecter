@@ -242,6 +242,49 @@ const DestinationSearch = ({
         const baseQuery = variants[0];
         const altQueries = variants.slice(1, 3);
 
+        const fetchPhoton = async (
+          searchQuery: string,
+          limit: number
+        ): Promise<NominatimResult[]> => {
+          const params = new URLSearchParams({
+            q: searchQuery,
+            limit: String(limit),
+          });
+
+          if (hasLocation) {
+            params.set("lat", String(userLat!));
+            params.set("lon", String(userLng!));
+          }
+
+          try {
+            const res = await fetch(`https://photon.komoot.de/api/?${params}`);
+            if (!res.ok) return [];
+            const data = await res.json();
+            return (data.features || []).map((f: any) => {
+              const props = f.properties || {};
+              const [lon, lat] = f.geometry?.coordinates || [0, 0];
+              return {
+                display_name: [props.name, props.street, props.city || props.town || props.village, props.state, props.country].filter(Boolean).join(", "),
+                lat: String(lat),
+                lon: String(lon),
+                type: props.osm_value || props.type || "",
+                class: props.osm_key || "",
+                address: {
+                  road: props.street,
+                  city: props.city,
+                  town: props.town,
+                  village: props.village,
+                  state: props.state,
+                  country: props.country,
+                  suburb: props.district,
+                },
+              } as NominatimResult;
+            });
+          } catch {
+            return [];
+          }
+        };
+
         const fetchNominatim = async (
           searchQuery: string,
           opts: { strictNearby: boolean; limit: number }
@@ -269,10 +312,10 @@ const DestinationSearch = ({
         };
 
         const responseGroups = await Promise.all([
-          fetchNominatim(baseQuery, { strictNearby: true, limit: 8 }),
-          fetchNominatim(baseQuery, { strictNearby: false, limit: 8 }),
+          fetchPhoton(baseQuery, 10),
+          fetchNominatim(baseQuery, { strictNearby: true, limit: 6 }),
           ...altQueries.map((variant) =>
-            fetchNominatim(variant, { strictNearby: true, limit: 6 })
+            fetchPhoton(variant, 6)
           ),
         ]);
 
