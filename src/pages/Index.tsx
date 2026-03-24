@@ -50,6 +50,13 @@ const Index = () => {
         }
         return next;
       });
+    } else if (mapInstanceRef.current && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          mapInstanceRef.current?.flyTo([pos.coords.latitude, pos.coords.longitude], 17, { duration: 0.8 });
+        },
+        () => toast.error("Unable to get your location")
+      );
     } else {
       toast.error("No GPS position yet");
     }
