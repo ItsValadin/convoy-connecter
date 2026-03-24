@@ -8,14 +8,26 @@ import ConvoyPanel from "@/components/ConvoyPanel";
 import NavigationPanel, { type RouteInfo } from "@/components/NavigationPanel";
 import { useNavigationAlerts, haversineDistance } from "@/hooks/useNavigationAlerts";
 import { toast } from "sonner";
-import { Crosshair, Volume2, VolumeX, Navigation, Clock, Gauge } from "lucide-react";
+import { Crosshair, Volume2, VolumeX, Navigation, Clock, Gauge, Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConvoy } from "@/hooks/useConvoy";
 import { fetchRoute, type RouteGeometry } from "@/lib/routing";
+import { useNavigate } from "react-router-dom";
 
 const DEFAULT_CENTER: [number, number] = [34.0522, -118.2437]; // LA
 
 const Index = () => {
+  const navigate = useNavigate();
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
+
+  useEffect(() => {
+    const dismissed = localStorage.getItem("convoy-install-dismissed");
+    if (!isStandalone && !dismissed) {
+      const timer = setTimeout(() => setShowInstallBanner(true), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [isStandalone]);
   const [center, setCenter] = useState<[number, number]>(DEFAULT_CENTER);
   const hasSetInitialCenter = useRef(false);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -310,6 +322,34 @@ const Index = () => {
           <span className="font-display text-xs text-muted-foreground">
             {gpsActive ? "GPS LIVE" : "GPS PENDING"} • {drivers.length} vehicles tracked
           </span>
+        </div>
+      )}
+      {/* Install PWA banner */}
+      {showInstallBanner && (
+        <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-sm animate-in slide-in-from-bottom-4 fade-in duration-500">
+          <div className="bg-card/95 backdrop-blur-xl border border-primary/30 rounded-xl px-4 py-3 flex items-center gap-3 shadow-lg">
+            <Download className="w-5 h-5 text-primary shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground">Install Convoy</p>
+              <p className="text-xs text-muted-foreground">Add to home screen for the best experience</p>
+            </div>
+            <Button
+              size="sm"
+              className="shrink-0 h-8 text-xs"
+              onClick={() => navigate("/install")}
+            >
+              Install
+            </Button>
+            <button
+              onClick={() => {
+                setShowInstallBanner(false);
+                localStorage.setItem("convoy-install-dismissed", "true");
+              }}
+              className="text-muted-foreground hover:text-foreground p-1"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
     </div>
