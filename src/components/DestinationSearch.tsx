@@ -257,7 +257,7 @@ const DestinationSearch = ({
     );
   }
 
-  const showRecents = query.length < 2 && recents.length > 0;
+  const showRecents = query.length < 1 && recents.length > 0;
 
   return (
     <div
