@@ -123,9 +123,47 @@ const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, o
     onMapReady?.(mapRef.current);
 
     return () => {
+      animationsRef.current.forEach((anim) => {
+        if (anim.rafId) cancelAnimationFrame(anim.rafId);
+      });
+      animationsRef.current.clear();
       mapRef.current?.remove();
       mapRef.current = null;
     };
+  }, []);
+
+  const animateMarker = useCallback((id: string, marker: L.Marker, toLat: number, toLng: number) => {
+    const existing = animationsRef.current.get(id);
+    if (existing?.rafId) cancelAnimationFrame(existing.rafId);
+
+    const currentPos = marker.getLatLng();
+    const state: AnimationState = {
+      fromLat: currentPos.lat,
+      fromLng: currentPos.lng,
+      toLat,
+      toLng,
+      startTime: performance.now(),
+      duration: LERP_DURATION,
+      rafId: null,
+    };
+
+    const step = (now: number) => {
+      const t = Math.min((now - state.startTime) / state.duration, 1);
+      // Ease-out cubic for natural deceleration
+      const eased = 1 - Math.pow(1 - t, 3);
+      const lat = state.fromLat + (state.toLat - state.fromLat) * eased;
+      const lng = state.fromLng + (state.toLng - state.fromLng) * eased;
+      marker.setLatLng([lat, lng]);
+
+      if (t < 1) {
+        state.rafId = requestAnimationFrame(step);
+      } else {
+        animationsRef.current.delete(id);
+      }
+    };
+
+    state.rafId = requestAnimationFrame(step);
+    animationsRef.current.set(id, state);
   }, []);
 
   useEffect(() => {
@@ -135,7 +173,8 @@ const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, o
     drivers.forEach((driver) => {
       const existing = markersRef.current.get(driver.id);
       if (existing) {
-        existing.setLatLng([driver.lat, driver.lng]);
+        // Animate position smoothly instead of jumping
+        animateMarker(driver.id, existing, driver.lat, driver.lng);
         existing.setIcon(createDriverIcon(driver.color, driver.isLeader, driver.speed, driver.heading));
         existing.setTooltipContent(driver.name);
       } else {
@@ -157,6 +196,9 @@ const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, o
     const currentIds = new Set(drivers.map((d) => d.id));
     markersRef.current.forEach((marker, id) => {
       if (!currentIds.has(id)) {
+        const anim = animationsRef.current.get(id);
+        if (anim?.rafId) cancelAnimationFrame(anim.rafId);
+        animationsRef.current.delete(id);
         mapRef.current!.removeLayer(marker);
         markersRef.current.delete(id);
       }
@@ -175,7 +217,7 @@ const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, o
         dashArray: "8 8",
       }).addTo(mapRef.current);
     }
-  }, [drivers]);
+  }, [drivers, animateMarker]);
 
   // Destination marker
   useEffect(() => {
