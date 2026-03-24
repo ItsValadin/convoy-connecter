@@ -80,18 +80,11 @@ const Index = () => {
     }
   }, [followMode, drivers, sessionId]);
 
-  // Disable follow mode on user drag and reset rotation
+  // Disable follow mode on user drag
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
-    const onDrag = () => {
-      setFollowMode(false);
-      const container = map.getContainer();
-      if (container) {
-        container.style.transition = "transform 0.5s ease";
-        container.style.transform = "rotate(0deg)";
-      }
-    };
+    const onDrag = () => setFollowMode(false);
     map.on("dragstart", onDrag);
     return () => { map.off("dragstart", onDrag); };
   }, [convoyCode]);
