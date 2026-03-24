@@ -203,6 +203,9 @@ const Index = () => {
           drivers={drivers}
           map={mapInstanceRef.current}
           sessionId={sessionId}
+          onArrowClick={(_id, lat, lng) => {
+            mapInstanceRef.current?.flyTo([lat, lng], 16, { duration: 0.8 });
+          }}
         />
       )}
       <ConvoyPanel
