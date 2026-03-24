@@ -155,7 +155,7 @@ const ConvoyPanel = ({ drivers, convoyCode, destination, onCreateConvoy, onJoinC
                       ) : (
                         <Circle className="w-2.5 h-2.5 text-muted-foreground" />
                       )}
-                    </div>
+                    </button>
                   );
                 })}
               </div>
