@@ -263,7 +263,7 @@ const Index = () => {
         <>
           {/* Speed indicator */}
           {self && (
-            <div className="absolute top-20 right-2 sm:right-4 z-10 bg-card/90 backdrop-blur-xl border border-border rounded-xl px-3 py-2 flex items-center gap-2 shadow-lg">
+            <div className="absolute top-28 sm:top-20 right-2 sm:right-4 z-10 bg-card/90 backdrop-blur-xl border border-border rounded-xl px-3 py-2 flex items-center gap-2 shadow-lg">
               <Gauge className="w-5 h-5 text-primary" />
               <div className="text-right">
                 <p className="font-display text-lg font-bold text-foreground leading-none">
