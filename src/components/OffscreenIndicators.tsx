@@ -14,12 +14,15 @@ interface OffscreenIndicatorsProps {
   drivers: Driver[];
   map: L.Map | null;
   sessionId?: string;
+  onArrowClick?: (driverId: string, lat: number, lng: number) => void;
 }
 
 interface Arrow {
   id: string;
   name: string;
   color: string;
+  lat: number;
+  lng: number;
   x: number;
   y: number;
   angle: number;
@@ -29,7 +32,7 @@ interface Arrow {
 const MARGIN = 40; // pixels from edge
 const ARROW_SIZE = 28;
 
-const OffscreenIndicators = ({ drivers, map, sessionId }: OffscreenIndicatorsProps) => {
+const OffscreenIndicators = ({ drivers, map, sessionId, onArrowClick }: OffscreenIndicatorsProps) => {
   const [arrows, setArrows] = useState<Arrow[]>([]);
   const rafRef = useRef<number>(0);
 
@@ -87,6 +90,8 @@ const OffscreenIndicators = ({ drivers, map, sessionId }: OffscreenIndicatorsPro
           id: driver.id,
           name: driver.name,
           color: driver.color,
+          lat: driver.lat,
+          lng: driver.lng,
           x,
           y,
           angle: (angle * 180) / Math.PI,
@@ -124,7 +129,8 @@ const OffscreenIndicators = ({ drivers, map, sessionId }: OffscreenIndicatorsPro
             top: arrow.y,
             transform: "translate(-50%, -50%)",
           }}
-          title={arrow.name}
+          title={`Pan to ${arrow.name}`}
+          onClick={() => onArrowClick?.(arrow.id, arrow.lat, arrow.lng)}
         >
           {/* Arrow SVG */}
           <svg
