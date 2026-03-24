@@ -42,7 +42,7 @@ const NavigationPanel = ({ route, loading, liveEtaSec, arrivalTime }: Navigation
   if (!route && !loading) return null;
 
   return (
-    <div className="w-72 max-h-[50vh] flex flex-col">
+    <div className="w-[min(18rem,calc(100vw-6rem))] max-h-[50vh] flex flex-col">
       {/* Summary bar */}
       <button
         onClick={() => setExpanded(!expanded)}
