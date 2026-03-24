@@ -305,7 +305,7 @@ const Index = () => {
 
       {/* Navigation panel */}
       {convoyCode && destination && (
-        <div className="absolute bottom-20 left-2 sm:left-4 z-10 flex items-end gap-2 sm:gap-3">
+        <div className="absolute bottom-24 left-2 sm:left-4 z-10 flex items-end gap-2 sm:gap-3">
           <NavigationPanel route={routeInfo} loading={routeLoading} liveEtaSec={liveEta?.remainingSec} arrivalTime={liveEta?.arrivalTime} />
           <Button
             size="icon"
