@@ -3,6 +3,7 @@ import L from "leaflet";
 import ConvoyMap from "@/components/ConvoyMap";
 import ConvoyChat from "@/components/ConvoyChat";
 import DestinationSearch from "@/components/DestinationSearch";
+import OffscreenIndicators from "@/components/OffscreenIndicators";
 import ConvoyPanel from "@/components/ConvoyPanel";
 import NavigationPanel, { type RouteInfo } from "@/components/NavigationPanel";
 import { useNavigationAlerts, haversineDistance } from "@/hooks/useNavigationAlerts";
@@ -197,6 +198,13 @@ const Index = () => {
         onMapReady={(map) => { mapInstanceRef.current = map; }}
         onMapClick={isLeader ? handleSetDestination : undefined}
       />
+      {convoyCode && (
+        <OffscreenIndicators
+          drivers={drivers}
+          map={mapInstanceRef.current}
+          sessionId={sessionId}
+        />
+      )}
       <ConvoyPanel
         drivers={drivers}
         convoyCode={convoyCode}
