@@ -14,6 +14,7 @@ interface OffscreenIndicatorsProps {
   drivers: Driver[];
   map: L.Map | null;
   sessionId?: string;
+  onArrowClick?: (driverId: string, lat: number, lng: number) => void;
 }
 
 interface Arrow {
