@@ -71,7 +71,7 @@ const ConvoyPanel = ({ drivers, convoyCode, destination, onCreateConvoy, onJoinC
   const isInConvoy = convoyCode !== null;
 
   return (
-    <div className="absolute top-14 sm:top-4 left-2 sm:left-4 z-10 flex items-start gap-1.5 sm:gap-2 max-w-[calc(100vw-3rem)]">
+    <div className="absolute top-[calc(3.5rem+env(safe-area-inset-top,0px))] sm:top-4 left-2 sm:left-4 z-10 flex items-start gap-1.5 sm:gap-2 max-w-[calc(100vw-3rem)]">
       {/* Panel */}
       <div className={`w-[min(20rem,calc(100vw-4rem))] transition-all duration-300 ${collapsed ? "-translate-x-[calc(100%+1rem)] opacity-0 pointer-events-none" : "translate-x-0 opacity-100"}`}>
       {/* Header */}
