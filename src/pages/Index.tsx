@@ -137,7 +137,7 @@ const Index = () => {
       {/* Next turn banner + ETA */}
       {convoyCode && destination && nextStep && nextStep.instruction && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-lg">
-          <div className="bg-primary text-primary-foreground rounded-xl px-4 py-3 flex items-center gap-3 shadow-lg">
+          <div className="bg-primary text-primary-foreground rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-3 shadow-lg">
             <Navigation className="w-6 h-6 shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="font-display text-sm font-semibold leading-snug truncate">
@@ -204,7 +204,7 @@ const Index = () => {
 
       {/* Navigation panel */}
       {convoyCode && destination && (
-        <div className="absolute bottom-20 left-4 z-10 flex items-end gap-3">
+        <div className="absolute bottom-20 left-2 sm:left-4 z-10 flex items-end gap-2 sm:gap-3">
           <NavigationPanel route={routeInfo} loading={routeLoading} liveEtaSec={liveEta?.remainingSec} arrivalTime={liveEta?.arrivalTime} />
           <Button
             size="icon"
@@ -221,7 +221,7 @@ const Index = () => {
         <Button
           size="icon"
           variant="outline"
-          className="absolute bottom-28 right-4 z-10 bg-card/90 backdrop-blur-xl border-border hover:bg-primary/20 hover:border-primary/50"
+          className="absolute bottom-28 right-2 sm:right-4 z-10 bg-card/90 backdrop-blur-xl border-border hover:bg-primary/20 hover:border-primary/50"
           onClick={handleCenterOnMe}
           title="Center on me"
         >
@@ -231,7 +231,7 @@ const Index = () => {
 
       {/* Bottom status bar */}
       {convoyCode && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 bg-card/90 backdrop-blur-xl border border-border rounded-full px-5 py-2.5 flex items-center gap-4">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 bg-card/90 backdrop-blur-xl border border-border rounded-full px-3 sm:px-5 py-2 sm:py-2.5 flex items-center gap-2 sm:gap-4 max-w-[90vw]">
           <div className={`w-2 h-2 rounded-full ${gpsActive ? "bg-primary" : "bg-convoy-amber"} animate-pulse`} />
           <span className="font-display text-xs text-muted-foreground">
             {gpsActive ? "GPS LIVE" : "GPS PENDING"} • {drivers.length} vehicles tracked

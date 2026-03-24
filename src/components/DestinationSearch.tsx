@@ -79,7 +79,7 @@ const DestinationSearch = ({ onSelectDestination, onClearDestination, hasDestina
 
   if (!isOpen) {
     return (
-      <div className="absolute top-4 right-4 z-10 flex gap-2">
+      <div className="absolute top-4 right-2 sm:right-4 z-10 flex gap-1.5 sm:gap-2">
         <Button
           size="sm"
           variant="outline"
@@ -104,7 +104,7 @@ const DestinationSearch = ({ onSelectDestination, onClearDestination, hasDestina
   }
 
   return (
-    <div className="absolute top-4 right-4 z-20 w-80">
+    <div className="absolute top-4 right-2 sm:right-4 z-20 w-[min(20rem,calc(100vw-1rem))]">
       <div className="bg-card/95 backdrop-blur-xl border border-border rounded-xl overflow-hidden">
         <div className="p-3 flex items-center gap-2">
           <MapPin className="w-4 h-4 text-destructive flex-shrink-0" />
