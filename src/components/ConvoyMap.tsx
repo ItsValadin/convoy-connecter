@@ -129,7 +129,7 @@ const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, o
           icon: createDriverIcon(driver.color, driver.isLeader, driver.speed, driver.heading),
         })
           .bindTooltip(driver.name, {
-            permanent: false,
+            permanent: true,
             direction: "top",
             className: "convoy-tooltip",
             offset: [0, -16],
