@@ -59,6 +59,9 @@ export const useConvoy = (initialCenter: [number, number]) => {
     }
   };
 
+  // Track recently left session IDs to prevent fetchMembers from re-adding them
+  const recentlyLeftRef = useRef<Set<string>>(new Set());
+
   // Subscribe to realtime broadcast + postgres changes for convoy members
   const subscribeToConvoy = useCallback((cId: string) => {
     channelRef.current = supabase
@@ -66,7 +69,9 @@ export const useConvoy = (initialCenter: [number, number]) => {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "convoy_members", filter: `convoy_id=eq.${cId}` },
-        () => {
+        (payload) => {
+          // Don't refetch if this is a simple UPDATE (position change) — broadcast handles that
+          if (payload.eventType === 'UPDATE') return;
           fetchMembers(cId);
         }
       )
@@ -98,6 +103,10 @@ export const useConvoy = (initialCenter: [number, number]) => {
         toast.success(`${payload.name} joined the convoy`);
       })
       .on("broadcast", { event: "leave" }, ({ payload }) => {
+        // Mark as recently left so fetchMembers won't re-add them
+        recentlyLeftRef.current.add(payload.session_id);
+        setTimeout(() => recentlyLeftRef.current.delete(payload.session_id), 10000);
+
         setDrivers((prev) => {
           const leavingDriver = prev.find((d) => d.id === payload.session_id);
           if (leavingDriver) {
@@ -144,16 +153,25 @@ export const useConvoy = (initialCenter: [number, number]) => {
     }
 
     if (data) {
-      const mapped: Driver[] = data.map((m) => ({
-        id: m.session_id,
-        name: m.name,
-        lat: m.lat,
-        lng: m.lng,
-        color: m.color,
-        isLeader: m.is_leader,
-        speed: m.speed,
-        heading: m.heading,
-      }));
+      // Filter out stale members (not seen in 30s) and recently-left members
+      const now = Date.now();
+      const STALE_THRESHOLD = 30000;
+      const mapped: Driver[] = data
+        .filter((m) => {
+          if (recentlyLeftRef.current.has(m.session_id)) return false;
+          const lastSeen = new Date(m.last_seen).getTime();
+          return now - lastSeen < STALE_THRESHOLD;
+        })
+        .map((m) => ({
+          id: m.session_id,
+          name: m.name,
+          lat: m.lat,
+          lng: m.lng,
+          color: m.color,
+          isLeader: m.is_leader,
+          speed: m.speed,
+          heading: m.heading,
+        }));
       setDrivers(mapped);
     }
   };
@@ -401,6 +419,35 @@ export const useConvoy = (initialCenter: [number, number]) => {
     setDestination(null);
     setIsLeader(false);
     toast("You left the convoy");
+  }, [convoyId]);
+
+  // beforeunload: delete self from DB when browser/tab closes
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (convoyId) {
+        // Use sendBeacon for reliable cleanup on tab close
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/convoy_members?convoy_id=eq.${convoyId}&session_id=eq.${sessionIdRef.current}`;
+        fetch(url, {
+          method: "DELETE",
+          headers: {
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          keepalive: true,
+        });
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [convoyId]);
+
+  // Periodic stale member cleanup every 15s
+  useEffect(() => {
+    if (!convoyId) return;
+    const interval = setInterval(() => {
+      fetchMembers(convoyId);
+    }, 15000);
+    return () => clearInterval(interval);
   }, [convoyId]);
 
   // Cleanup on unmount
