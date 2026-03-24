@@ -59,6 +59,9 @@ export const useConvoy = (initialCenter: [number, number]) => {
     }
   };
 
+  // Track recently left session IDs to prevent fetchMembers from re-adding them
+  const recentlyLeftRef = useRef<Set<string>>(new Set());
+
   // Subscribe to realtime broadcast + postgres changes for convoy members
   const subscribeToConvoy = useCallback((cId: string) => {
     channelRef.current = supabase
@@ -66,7 +69,9 @@ export const useConvoy = (initialCenter: [number, number]) => {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "convoy_members", filter: `convoy_id=eq.${cId}` },
-        () => {
+        (payload) => {
+          // Don't refetch if this is a simple UPDATE (position change) — broadcast handles that
+          if (payload.eventType === 'UPDATE') return;
           fetchMembers(cId);
         }
       )
