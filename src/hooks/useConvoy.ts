@@ -93,6 +93,9 @@ export const useConvoy = (initialCenter: [number, number]) => {
           return updated;
         });
       })
+      .on("broadcast", { event: "leave" }, ({ payload }) => {
+        setDrivers((prev) => prev.filter((d) => d.id !== payload.session_id));
+      })
       .subscribe();
   }, []);
 
