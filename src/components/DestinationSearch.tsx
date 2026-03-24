@@ -3,19 +3,20 @@ import { Search, MapPin, X, Loader2, Clock, Navigation2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-interface PhotonFeature {
-  geometry: { coordinates: [number, number] }; // [lon, lat]
-  properties: {
-    name?: string;
+interface NominatimResult {
+  display_name: string;
+  lat: string;
+  lon: string;
+  type?: string;
+  class?: string;
+  address?: {
+    road?: string;
     city?: string;
+    town?: string;
+    village?: string;
     state?: string;
     country?: string;
-    street?: string;
-    housenumber?: string;
-    postcode?: string;
-    osm_value?: string;
-    osm_key?: string;
-    type?: string;
+    suburb?: string;
   };
 }
 
@@ -56,12 +57,6 @@ function saveRecent(dest: RecentDestination) {
 }
 
 const TYPE_LABELS: Record<string, string> = {
-  city: "City",
-  town: "Town",
-  village: "Village",
-  hamlet: "Hamlet",
-  suburb: "Suburb",
-  neighbourhood: "Neighbourhood",
   restaurant: "Restaurant",
   cafe: "Café",
   fast_food: "Fast Food",
@@ -77,29 +72,38 @@ const TYPE_LABELS: Record<string, string> = {
   bar: "Bar",
   pub: "Pub",
   bank: "Bank",
-  atm: "ATM",
   cinema: "Cinema",
   theatre: "Theatre",
   park: "Park",
   stadium: "Stadium",
-  airport: "Airport",
+  aerodrome: "Airport",
   bus_station: "Bus Station",
-  train_station: "Train Station",
+  station: "Station",
+  city: "City",
+  town: "Town",
+  village: "Village",
+  suburb: "Suburb",
+  residential: "Area",
 };
 
-function formatPhotonResult(props: PhotonFeature["properties"]): { label: string; subtitle: string; type: string | null } {
-  const name = props.name || props.street || "Unknown";
-  const typeKey = props.osm_value || props.type || "";
-  const type = TYPE_LABELS[typeKey] || null;
+function formatResult(r: NominatimResult): { label: string; subtitle: string; type: string | null } {
+  const parts = r.display_name.split(",").map((s) => s.trim());
+  const label = parts[0] || "Unknown";
+  const type = TYPE_LABELS[r.type || ""] || null;
 
-  const parts: string[] = [];
-  if (props.street && props.street !== name) {
-    parts.push(props.housenumber ? `${props.housenumber} ${props.street}` : props.street);
+  // Build subtitle from address or fallback to display_name parts
+  const addr = r.address;
+  const subtitleParts: string[] = [];
+  if (addr) {
+    if (addr.road && addr.road !== label) subtitleParts.push(addr.road);
+    const locality = addr.city || addr.town || addr.village || addr.suburb;
+    if (locality) subtitleParts.push(locality);
+    if (addr.state) subtitleParts.push(addr.state);
+  } else if (parts.length > 1) {
+    subtitleParts.push(...parts.slice(1, 3));
   }
-  if (props.city) parts.push(props.city);
-  if (props.state) parts.push(props.state);
 
-  return { label: name, subtitle: parts.join(", "), type };
+  return { label, subtitle: subtitleParts.join(", "), type };
 }
 
 const DestinationSearch = ({
@@ -111,7 +115,7 @@ const DestinationSearch = ({
   userLng,
 }: DestinationSearchProps) => {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<PhotonFeature[]>([]);
+  const [results, setResults] = useState<NominatimResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [recents, setRecents] = useState<RecentDestination[]>([]);
@@ -130,22 +134,28 @@ const DestinationSearch = ({
       setLoading(true);
       try {
         const params = new URLSearchParams({
+          format: "json",
           q,
           limit: "8",
+          addressdetails: "1",
+          dedupe: "1",
         });
+        // Bias results toward user's location with a ~50km viewbox
         if (userLat != null && userLng != null) {
-          params.set("lat", String(userLat));
-          params.set("lon", String(userLng));
+          const delta = 0.5; // ~50km
+          params.set("viewbox", `${userLng - delta},${userLat + delta},${userLng + delta},${userLat - delta}`);
+          params.set("bounded", "0"); // prefer but don't restrict
         }
-        const res = await fetch(`https://photon.komoot.de/api/?${params}`);
-        const data = await res.json();
-        const features: PhotonFeature[] = data.features || [];
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?${params}`,
+          { headers: { "Accept-Language": "en" } }
+        );
+        const data: NominatimResult[] = await res.json();
 
         // Deduplicate by rounding coords
         const seen = new Set<string>();
-        const unique = features.filter((f) => {
-          const [lon, lat] = f.geometry.coordinates;
-          const key = `${lat.toFixed(3)},${lon.toFixed(3)}`;
+        const unique = data.filter((r) => {
+          const key = `${parseFloat(r.lat).toFixed(3)},${parseFloat(r.lon).toFixed(3)}`;
           if (seen.has(key)) return false;
           seen.add(key);
           return true;
@@ -164,10 +174,13 @@ const DestinationSearch = ({
   const handleInputChange = (value: string) => {
     setQuery(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => searchPlaces(value), 300);
+    debounceRef.current = setTimeout(() => searchPlaces(value), 400);
   };
 
-  const handleSelect = (lat: number, lng: number, label: string, subtitle?: string) => {
+  const handleSelectResult = (r: NominatimResult) => {
+    const { label, subtitle } = formatResult(r);
+    const lat = parseFloat(r.lat);
+    const lng = parseFloat(r.lon);
     onSelectDestination(lat, lng, label);
     setQuery(label);
     setResults([]);
@@ -175,14 +188,12 @@ const DestinationSearch = ({
     saveRecent({ lat, lng, label, subtitle, timestamp: Date.now() });
   };
 
-  const handleSelectPhoton = (feature: PhotonFeature) => {
-    const [lon, lat] = feature.geometry.coordinates;
-    const { label, subtitle } = formatPhotonResult(feature.properties);
-    handleSelect(lat, lon, label, subtitle);
-  };
-
   const handleSelectRecent = (recent: RecentDestination) => {
-    handleSelect(recent.lat, recent.lng, recent.label, recent.subtitle);
+    onSelectDestination(recent.lat, recent.lng, recent.label);
+    setQuery(recent.label);
+    setResults([]);
+    setIsOpen(false);
+    saveRecent({ ...recent, timestamp: Date.now() });
   };
 
   if (!isOpen) {
@@ -194,7 +205,7 @@ const DestinationSearch = ({
           size="sm"
           variant="outline"
           className="bg-card/90 backdrop-blur-xl border-border hover:bg-primary/20 hover:border-primary/50 font-display"
-          onClick={() => setIsOpen(true)}
+          onClick={() => { setQuery(""); setIsOpen(true); }}
         >
           <Search className="w-4 h-4 mr-1.5 text-primary" />
           {hasDestination ? "Change Destination" : "Set Destination"}
@@ -280,12 +291,12 @@ const DestinationSearch = ({
         {/* Search results */}
         {results.length > 0 && (
           <div className="border-t border-border max-h-48 overflow-y-auto">
-            {results.map((f, i) => {
-              const { label, subtitle, type } = formatPhotonResult(f.properties);
+            {results.map((r, i) => {
+              const { label, subtitle, type } = formatResult(r);
               return (
                 <button
                   key={i}
-                  onClick={() => handleSelectPhoton(f)}
+                  onClick={() => handleSelectResult(r)}
                   className="w-full text-left px-3 py-2.5 hover:bg-primary/10 transition-colors flex items-start gap-2 border-b border-border/50 last:border-b-0"
                 >
                   <MapPin className="w-3.5 h-3.5 text-destructive mt-0.5 flex-shrink-0" />
