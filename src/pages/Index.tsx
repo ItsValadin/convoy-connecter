@@ -13,11 +13,13 @@ import { Button } from "@/components/ui/button";
 import { useConvoy } from "@/hooks/useConvoy";
 import { fetchRoute, type RouteGeometry } from "@/lib/routing";
 import { useNavigate } from "react-router-dom";
+import { useWakeLock } from "@/hooks/useWakeLock";
 
 const DEFAULT_CENTER: [number, number] = [34.0522, -118.2437]; // LA
 
 const Index = () => {
   const navigate = useNavigate();
+  useWakeLock();
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
 
