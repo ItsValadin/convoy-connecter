@@ -32,7 +32,7 @@ interface Arrow {
 const MARGIN = 40; // pixels from edge
 const ARROW_SIZE = 28;
 
-const OffscreenIndicators = ({ drivers, map, sessionId }: OffscreenIndicatorsProps) => {
+const OffscreenIndicators = ({ drivers, map, sessionId, onArrowClick }: OffscreenIndicatorsProps) => {
   const [arrows, setArrows] = useState<Arrow[]>([]);
   const rafRef = useRef<number>(0);
 
