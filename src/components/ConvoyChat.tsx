@@ -143,11 +143,9 @@ const ConvoyChat = ({ convoyId, sessionId, senderName, senderColor }: ConvoyChat
           const isSelf = msg.session_id === sessionId;
           return (
             <div key={msg.id} className={`flex flex-col ${isSelf ? "items-end" : "items-start"}`}>
-              {!isSelf && (
-                <span className="text-[10px] font-display mb-0.5" style={{ color: msg.sender_color }}>
-                  {msg.sender_name}
-                </span>
-              )}
+              <span className="text-[10px] font-display mb-0.5" style={{ color: msg.sender_color }}>
+                {isSelf ? "You" : msg.sender_name}
+              </span>
               <div
                 className={`rounded-lg px-3 py-1.5 max-w-[85%] text-sm ${
                   isSelf
