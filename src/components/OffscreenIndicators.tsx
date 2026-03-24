@@ -129,7 +129,8 @@ const OffscreenIndicators = ({ drivers, map, sessionId, onArrowClick }: Offscree
             top: arrow.y,
             transform: "translate(-50%, -50%)",
           }}
-          title={arrow.name}
+          title={`Pan to ${arrow.name}`}
+          onClick={() => onArrowClick?.(arrow.id, arrow.lat, arrow.lng)}
         >
           {/* Arrow SVG */}
           <svg
