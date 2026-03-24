@@ -197,7 +197,7 @@ const Index = () => {
     <div className="relative w-full h-screen overflow-hidden bg-background">
       {/* Next turn banner + ETA */}
       {convoyCode && destination && nextStep && nextStep.instruction && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-lg">
+        <div className="absolute top-[calc(1rem+env(safe-area-inset-top,0px))] sm:top-4 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-lg">
           <div className="bg-primary text-primary-foreground rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-3 shadow-lg">
             <Navigation className="w-6 h-6 shrink-0" />
             <div className="flex-1 min-w-0">
