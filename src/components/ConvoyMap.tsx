@@ -93,7 +93,12 @@ const createDestinationIcon = () => {
 
 const LERP_DURATION = 1000; // 1 second interpolation
 
-const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, onMapReady, onMapClick }: ConvoyMapProps) => {
+const TILE_URLS: Record<MapTheme, string> = {
+  dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+  light: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+};
+
+const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, mapTheme = "dark", onMapReady, onMapClick }: ConvoyMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const animationsRef = useRef<Map<string, AnimationState>>(new Map());
