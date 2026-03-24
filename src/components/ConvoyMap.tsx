@@ -142,6 +142,16 @@ const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, m
     };
   }, []);
 
+  // Swap tile layer when theme changes
+  useEffect(() => {
+    if (!mapRef.current || !tileLayerRef.current) return;
+    tileLayerRef.current.remove();
+    tileLayerRef.current = L.tileLayer(TILE_URLS[mapTheme], {
+      maxZoom: 19,
+      className: mapTheme === "dark" ? "map-tiles-lighter" : "",
+    }).addTo(mapRef.current);
+  }, [mapTheme]);
+
   const animateMarker = useCallback((id: string, marker: L.Marker, toLat: number, toLng: number) => {
     const existing = animationsRef.current.get(id);
     if (existing?.rafId) cancelAnimationFrame(existing.rafId);
