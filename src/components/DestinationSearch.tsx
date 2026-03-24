@@ -133,33 +133,63 @@ const DestinationSearch = ({
       }
       setLoading(true);
       try {
-        const params = new URLSearchParams({
+        const hasLocation = userLat != null && userLng != null;
+
+        // Do two searches in parallel: one bounded nearby, one global fallback
+        const nearbyParams = new URLSearchParams({
           format: "json",
           q,
           limit: "8",
           addressdetails: "1",
           dedupe: "1",
         });
-        // Bias results toward user's location with a ~50km viewbox
-        if (userLat != null && userLng != null) {
-          const delta = 0.5; // ~50km
-          params.set("viewbox", `${userLng - delta},${userLat + delta},${userLng + delta},${userLat - delta}`);
-          params.set("bounded", "0"); // prefer but don't restrict
+        if (hasLocation) {
+          const delta = 0.25; // ~25km tight box
+          nearbyParams.set("viewbox", `${userLng! - delta},${userLat! + delta},${userLng! + delta},${userLat! - delta}`);
+          nearbyParams.set("bounded", "1"); // strict: only nearby
         }
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?${params}`,
-          { headers: { "Accept-Language": "en" } }
-        );
-        const data: NominatimResult[] = await res.json();
 
-        // Deduplicate by rounding coords
+        const globalParams = new URLSearchParams({
+          format: "json",
+          q,
+          limit: "6",
+          addressdetails: "1",
+          dedupe: "1",
+        });
+        if (hasLocation) {
+          const delta = 2; // ~200km wide box for bias
+          globalParams.set("viewbox", `${userLng! - delta},${userLat! + delta},${userLng! + delta},${userLat! - delta}`);
+          globalParams.set("bounded", "0");
+        }
+
+        const fetchOpts = { headers: { "Accept-Language": "en" } };
+        const [nearbyRes, globalRes] = await Promise.all([
+          fetch(`https://nominatim.openstreetmap.org/search?${nearbyParams}`, fetchOpts),
+          fetch(`https://nominatim.openstreetmap.org/search?${globalParams}`, fetchOpts),
+        ]);
+        const [nearbyData, globalData]: [NominatimResult[], NominatimResult[]] = await Promise.all([
+          nearbyRes.json(),
+          globalRes.json(),
+        ]);
+
+        // Merge: nearby first, then global, deduplicated
+        const merged = [...nearbyData, ...globalData];
         const seen = new Set<string>();
-        const unique = data.filter((r) => {
+        const unique = merged.filter((r) => {
           const key = `${parseFloat(r.lat).toFixed(3)},${parseFloat(r.lon).toFixed(3)}`;
           if (seen.has(key)) return false;
           seen.add(key);
           return true;
         });
+
+        // Sort by distance from user
+        if (hasLocation) {
+          unique.sort((a, b) => {
+            const distA = Math.hypot(parseFloat(a.lat) - userLat!, parseFloat(a.lon) - userLng!);
+            const distB = Math.hypot(parseFloat(b.lat) - userLat!, parseFloat(b.lon) - userLng!);
+            return distA - distB;
+          });
+        }
 
         setResults(unique.slice(0, 6));
       } catch {
