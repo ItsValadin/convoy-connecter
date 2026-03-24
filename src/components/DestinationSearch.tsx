@@ -205,7 +205,7 @@ const DestinationSearch = ({
           size="sm"
           variant="outline"
           className="bg-card/90 backdrop-blur-xl border-border hover:bg-primary/20 hover:border-primary/50 font-display"
-          onClick={() => setIsOpen(true)}
+          onClick={() => { setQuery(""); setIsOpen(true); }}
         >
           <Search className="w-4 h-4 mr-1.5 text-primary" />
           {hasDestination ? "Change Destination" : "Set Destination"}
