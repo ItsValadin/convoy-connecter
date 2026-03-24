@@ -125,73 +125,189 @@ const DestinationSearch = ({
     if (isOpen) setRecents(loadRecent());
   }, [isOpen]);
 
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
+  const normalizeQuery = (input: string) =>
+    input
+      .toLowerCase()
+      .replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, " ")
+      .replace(/\s+/g, " ")
+      .replace(/\bnear me\b/g, "")
+      .trim();
+
+  const buildSearchVariants = (raw: string) => {
+    const normalized = normalizeQuery(raw);
+    const variants = new Set<string>([normalized]);
+
+    const replacements: Array<[RegExp, string]> = [
+      [/\bstn\b/g, "station"],
+      [/\bstaiton\b/g, "station"],
+      [/\brestarant\b/g, "restaurant"],
+      [/\bpetrrol\b/g, "petrol"],
+      [/\bpetorl\b/g, "petrol"],
+    ];
+
+    let corrected = normalized;
+    for (const [pattern, replacement] of replacements) {
+      corrected = corrected.replace(pattern, replacement);
+    }
+    variants.add(corrected.trim());
+
+    if (/\b(petrol|gas|fuel)\b/.test(corrected)) {
+      variants.add("petrol station");
+      variants.add("gas station");
+      variants.add("fuel station");
+    }
+
+    if (/\b(ev|electric|charger|charging)\b/.test(corrected)) {
+      variants.add("ev charging station");
+      variants.add("electric vehicle charger");
+    }
+
+    if (/\b(coffee|cafe|caf[eé])\b/.test(corrected)) {
+      variants.add("coffee shop");
+      variants.add("cafe");
+    }
+
+    return [...variants].filter(Boolean).slice(0, 4);
+  };
+
+  const haversineKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    const R = 6371;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(a));
+  };
+
+  const textRelevanceScore = (q: string, r: NominatimResult) => {
+    const haystack = `${r.display_name} ${r.type || ""} ${r.class || ""}`.toLowerCase();
+    const tokens = q.split(" ").filter((t) => t.length > 1);
+    let score = 0;
+
+    for (const token of tokens) {
+      if (haystack.startsWith(token)) score += 4;
+      else if (haystack.includes(` ${token}`)) score += 3;
+      else if (haystack.includes(token)) score += 1;
+    }
+
+    return score;
+  };
+
+  const intentBoost = (q: string, r: NominatimResult) => {
+    const t = (r.type || "").toLowerCase();
+    const cls = (r.class || "").toLowerCase();
+    const name = r.display_name.toLowerCase();
+
+    if (/\b(petrol|gas|fuel)\b/.test(q)) {
+      if (t === "fuel" || name.includes("fuel") || name.includes("gas station") || name.includes("petrol")) return 18;
+      if (cls === "amenity") return 6;
+    }
+
+    if (/\b(coffee|cafe|caf[eé])\b/.test(q)) {
+      if (t === "cafe" || name.includes("coffee")) return 14;
+    }
+
+    if (/\b(ev|electric|charger|charging)\b/.test(q)) {
+      if (name.includes("charging") || name.includes("charger") || t.includes("charging")) return 16;
+    }
+
+    return 0;
+  };
+
   const searchPlaces = useCallback(
     async (q: string) => {
       if (q.length < 1) {
         setResults([]);
         return;
       }
+
+      const queryNormalized = normalizeQuery(q);
+      if (!queryNormalized) {
+        setResults([]);
+        return;
+      }
+
       setLoading(true);
       try {
         const hasLocation = userLat != null && userLng != null;
+        const variants = buildSearchVariants(queryNormalized);
+        const baseQuery = variants[0];
+        const altQueries = variants.slice(1, 3);
 
-        // Do two searches in parallel: one bounded nearby, one global fallback
-        const nearbyParams = new URLSearchParams({
-          format: "json",
-          q,
-          limit: "8",
-          addressdetails: "1",
-          dedupe: "1",
-        });
-        if (hasLocation) {
-          const delta = 0.25; // ~25km tight box
-          nearbyParams.set("viewbox", `${userLng! - delta},${userLat! + delta},${userLng! + delta},${userLat! - delta}`);
-          nearbyParams.set("bounded", "1"); // strict: only nearby
-        }
+        const fetchNominatim = async (
+          searchQuery: string,
+          opts: { strictNearby: boolean; limit: number }
+        ): Promise<NominatimResult[]> => {
+          const params = new URLSearchParams({
+            format: "json",
+            q: searchQuery,
+            limit: String(opts.limit),
+            addressdetails: "1",
+            dedupe: "1",
+          });
 
-        const globalParams = new URLSearchParams({
-          format: "json",
-          q,
-          limit: "6",
-          addressdetails: "1",
-          dedupe: "1",
-        });
-        if (hasLocation) {
-          const delta = 2; // ~200km wide box for bias
-          globalParams.set("viewbox", `${userLng! - delta},${userLat! + delta},${userLng! + delta},${userLat! - delta}`);
-          globalParams.set("bounded", "0");
-        }
+          if (hasLocation) {
+            const delta = opts.strictNearby ? 0.2 : 1.5;
+            params.set("viewbox", `${userLng! - delta},${userLat! + delta},${userLng! + delta},${userLat! - delta}`);
+            params.set("bounded", opts.strictNearby ? "1" : "0");
+          }
 
-        const fetchOpts = { headers: { "Accept-Language": "en" } };
-        const [nearbyRes, globalRes] = await Promise.all([
-          fetch(`https://nominatim.openstreetmap.org/search?${nearbyParams}`, fetchOpts),
-          fetch(`https://nominatim.openstreetmap.org/search?${globalParams}`, fetchOpts),
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
+            headers: { "Accept-Language": "en" },
+          });
+
+          if (!res.ok) return [];
+          return (await res.json()) as NominatimResult[];
+        };
+
+        const responseGroups = await Promise.all([
+          fetchNominatim(baseQuery, { strictNearby: true, limit: 8 }),
+          fetchNominatim(baseQuery, { strictNearby: false, limit: 8 }),
+          ...altQueries.map((variant) =>
+            fetchNominatim(variant, { strictNearby: true, limit: 6 })
+          ),
         ]);
-        const [nearbyData, globalData]: [NominatimResult[], NominatimResult[]] = await Promise.all([
-          nearbyRes.json(),
-          globalRes.json(),
-        ]);
 
-        // Merge: nearby first, then global, deduplicated
-        const merged = [...nearbyData, ...globalData];
+        const merged = responseGroups.flat();
         const seen = new Set<string>();
         const unique = merged.filter((r) => {
-          const key = `${parseFloat(r.lat).toFixed(3)},${parseFloat(r.lon).toFixed(3)}`;
+          const key = `${parseFloat(r.lat).toFixed(4)},${parseFloat(r.lon).toFixed(4)}`;
           if (seen.has(key)) return false;
           seen.add(key);
           return true;
         });
 
-        // Sort by distance from user
-        if (hasLocation) {
-          unique.sort((a, b) => {
-            const distA = Math.hypot(parseFloat(a.lat) - userLat!, parseFloat(a.lon) - userLng!);
-            const distB = Math.hypot(parseFloat(b.lat) - userLat!, parseFloat(b.lon) - userLng!);
-            return distA - distB;
-          });
-        }
+        const ranked = unique
+          .map((r) => {
+            const textScore = textRelevanceScore(queryNormalized, r);
+            const boost = intentBoost(queryNormalized, r);
+            const distanceScore = hasLocation
+              ? Math.max(
+                  0,
+                  24 -
+                    haversineKm(
+                      userLat!,
+                      userLng!,
+                      parseFloat(r.lat),
+                      parseFloat(r.lon)
+                    )
+                )
+              : 0;
 
-        setResults(unique.slice(0, 6));
+            return { r, score: textScore * 10 + boost + distanceScore };
+          })
+          .sort((a, b) => b.score - a.score)
+          .map((entry) => entry.r);
+
+        setResults(ranked.slice(0, 6));
       } catch {
         setResults([]);
       } finally {
