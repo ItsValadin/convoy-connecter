@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Users, Copy, Plus, LogIn, Navigation, Crown, Circle, LogOut, ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +49,15 @@ const ConvoyPanel = ({ drivers, convoyCode, destination, onCreateConvoy, onJoinC
   const [mode, setMode] = useState<"idle" | "create" | "join">("idle");
   const [copied, setCopied] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+
+  // Reset form when leaving convoy
+  useEffect(() => {
+    if (!convoyCode) {
+      setMode("idle");
+      setName("");
+      setJoinCode("");
+    }
+  }, [convoyCode]);
 
   const handleCopy = () => {
     if (convoyCode) {
