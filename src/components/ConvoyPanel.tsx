@@ -27,6 +27,7 @@ interface ConvoyPanelProps {
   onCreateConvoy: (name: string) => void;
   onJoinConvoy: (code: string, name: string) => void;
   onLeaveConvoy?: () => void;
+  onDriverClick?: (driver: Driver) => void;
 }
 
 const haversineDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
