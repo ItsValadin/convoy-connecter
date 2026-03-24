@@ -101,6 +101,7 @@ const Index = () => {
     if (!destination) {
       setRouteInfo(null);
       setRouteCoordinates(null);
+      lastRouteFetchRef.current = 0;
       return;
     }
 
