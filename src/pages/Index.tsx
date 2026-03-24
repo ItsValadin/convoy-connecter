@@ -71,20 +71,42 @@ const Index = () => {
     }
   }, [drivers, sessionId]);
 
-  // Follow mode: track user position continuously
+  // Follow mode: track user position continuously + heading-up rotation
   useEffect(() => {
-    if (!followMode) return;
+    if (!followMode) {
+      // Reset rotation to north-up when follow mode is off
+      const container = mapInstanceRef.current?.getContainer();
+      if (container) {
+        container.style.transition = "transform 0.5s ease";
+        container.style.transform = "rotate(0deg)";
+      }
+      return;
+    }
     const self = drivers.find((d) => d.id === sessionId);
     if (self && mapInstanceRef.current) {
       mapInstanceRef.current.setView([self.lat, self.lng], mapInstanceRef.current.getZoom(), { animate: true, duration: 0.3 });
+      // Rotate map so heading points up
+      const heading = typeof self.heading === "number" ? self.heading : 0;
+      const container = mapInstanceRef.current.getContainer();
+      if (container) {
+        container.style.transition = "transform 0.3s ease";
+        container.style.transform = `rotate(${-heading}deg)`;
+      }
     }
   }, [followMode, drivers, sessionId]);
 
-  // Disable follow mode on user drag
+  // Disable follow mode on user drag and reset rotation
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
-    const onDrag = () => setFollowMode(false);
+    const onDrag = () => {
+      setFollowMode(false);
+      const container = map.getContainer();
+      if (container) {
+        container.style.transition = "transform 0.5s ease";
+        container.style.transform = "rotate(0deg)";
+      }
+    };
     map.on("dragstart", onDrag);
     return () => { map.off("dragstart", onDrag); };
   }, [convoyCode]);
