@@ -248,6 +248,7 @@ const Index = () => {
           onSelectDestination={handleSetDestination}
           onClearDestination={handleClearDestination}
           hasDestination={!!destination}
+          hasBanner={!!destination && !!nextStep?.instruction}
         />
       )}
 
