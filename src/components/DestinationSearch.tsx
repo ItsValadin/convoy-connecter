@@ -63,8 +63,14 @@ const DestinationSearch = ({ onSelectDestination, onClearDestination, hasDestina
     debounceRef.current = setTimeout(() => searchPlaces(value), 400);
   };
 
+  const formatLabel = (name: string) => {
+    const parts = name.split(",").map((s) => s.trim());
+    if (parts.length <= 2) return name;
+    return `${parts[0]}, ${parts[1]}`;
+  };
+
   const handleSelect = (result: SearchResult) => {
-    const label = result.display_name.split(",").slice(0, 2).join(",").trim();
+    const label = formatLabel(result.display_name);
     onSelectDestination(parseFloat(result.lat), parseFloat(result.lon), label);
     setQuery(label);
     setResults([]);
