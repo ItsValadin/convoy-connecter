@@ -37,14 +37,40 @@ const Index = () => {
     handleClearDestination,
   } = useConvoy(center);
 
+  const [followMode, setFollowMode] = useState(false);
+
   const handleCenterOnMe = useCallback(() => {
     const self = drivers.find((d) => d.id === sessionId);
     if (self && mapInstanceRef.current) {
-      mapInstanceRef.current.flyTo([self.lat, self.lng], 16, { duration: 0.8 });
+      setFollowMode((prev) => {
+        const next = !prev;
+        if (next) {
+          mapInstanceRef.current!.flyTo([self.lat, self.lng], 18, { duration: 0.8 });
+        }
+        return next;
+      });
     } else {
       toast.error("No GPS position yet");
     }
   }, [drivers, sessionId]);
+
+  // Follow mode: track user position continuously
+  useEffect(() => {
+    if (!followMode) return;
+    const self = drivers.find((d) => d.id === sessionId);
+    if (self && mapInstanceRef.current) {
+      mapInstanceRef.current.setView([self.lat, self.lng], mapInstanceRef.current.getZoom(), { animate: true, duration: 0.3 });
+    }
+  }, [followMode, drivers, sessionId]);
+
+  // Disable follow mode on user drag
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    const onDrag = () => setFollowMode(false);
+    map.on("dragstart", onDrag);
+    return () => { map.off("dragstart", onDrag); };
+  }, [convoyCode]);
 
   // Try to get initial position for map center
   useEffect(() => {
@@ -239,11 +265,11 @@ const Index = () => {
           <Button
             size="icon"
             variant="outline"
-            className="absolute bottom-28 right-2 sm:right-4 z-10 bg-card/90 backdrop-blur-xl border-border hover:bg-primary/20 hover:border-primary/50"
+            className={`absolute bottom-28 right-2 sm:right-4 z-10 backdrop-blur-xl border-border ${followMode ? "bg-primary/20 border-primary/50" : "bg-card/90 hover:bg-primary/20 hover:border-primary/50"}`}
             onClick={handleCenterOnMe}
-            title="Center on me"
+            title={followMode ? "Stop following" : "Follow me"}
           >
-            <Crosshair className="w-5 h-5 text-primary" />
+            <Crosshair className={`w-5 h-5 ${followMode ? "text-primary animate-pulse" : "text-primary"}`} />
           </Button>
         </>
       )}
