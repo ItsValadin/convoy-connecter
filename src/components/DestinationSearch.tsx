@@ -95,7 +95,7 @@ const DestinationSearch = ({ onSelectDestination, onClearDestination, hasDestina
             size="sm"
             variant="outline"
             className="bg-card/90 backdrop-blur-xl border-destructive/50 text-destructive hover:bg-destructive/10 font-display"
-            onClick={onClearDestination}
+            onClick={() => { onClearDestination(); setQuery(""); }}
           >
             <X className="w-4 h-4 mr-1.5" /> Clear
           </Button>
