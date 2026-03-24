@@ -35,6 +35,9 @@ const Index = () => {
   const mapInstanceRef = useRef<L.Map | null>(null);
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [routeCoordinates, setRouteCoordinates] = useState<[number, number][] | null>(null);
+  const [mapTheme, setMapTheme] = useState<"dark" | "light">(() => {
+    return (localStorage.getItem("convoy-map-theme") as "dark" | "light") || "dark";
+  });
   const [routeLoading, setRouteLoading] = useState(false);
 
   const {
