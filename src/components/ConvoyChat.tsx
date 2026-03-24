@@ -103,7 +103,7 @@ const ConvoyChat = ({ convoyId, sessionId, senderName, senderColor }: ConvoyChat
       <Button
         size="icon"
         variant="outline"
-        className="absolute bottom-16 left-2 sm:left-4 z-20 bg-card/90 backdrop-blur-xl border-border hover:bg-primary/20 hover:border-primary/50"
+        className="absolute bottom-4 left-14 sm:left-16 z-20 bg-card/90 backdrop-blur-xl border-border hover:bg-primary/20 hover:border-primary/50"
         onClick={handleOpen}
         title="Open chat"
       >
