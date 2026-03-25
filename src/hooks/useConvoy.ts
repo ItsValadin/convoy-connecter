@@ -153,25 +153,43 @@ export const useConvoy = (initialCenter: [number, number]) => {
     }
 
     if (data) {
-      // Filter out stale members (not seen in 30s) and recently-left members
       const now = Date.now();
       const STALE_THRESHOLD = 30000;
-      const mapped: Driver[] = data
-        .filter((m) => {
-          if (recentlyLeftRef.current.has(m.session_id)) return false;
-          const lastSeen = new Date(m.last_seen).getTime();
-          return now - lastSeen < STALE_THRESHOLD;
-        })
-        .map((m) => ({
-          id: m.session_id,
-          name: m.name,
-          lat: m.lat,
-          lng: m.lng,
-          color: m.color,
-          isLeader: m.is_leader,
-          speed: m.speed,
-          heading: m.heading,
-        }));
+      const active: typeof data = [];
+      const staleIds: string[] = [];
+
+      for (const m of data) {
+        if (recentlyLeftRef.current.has(m.session_id)) {
+          staleIds.push(m.id);
+          continue;
+        }
+        const lastSeen = new Date(m.last_seen).getTime();
+        if (now - lastSeen >= STALE_THRESHOLD) {
+          staleIds.push(m.id);
+          continue;
+        }
+        active.push(m);
+      }
+
+      // Delete stale members from DB so they don't persist
+      if (staleIds.length > 0) {
+        supabase
+          .from("convoy_members")
+          .delete()
+          .in("id", staleIds)
+          .then();
+      }
+
+      const mapped: Driver[] = active.map((m) => ({
+        id: m.session_id,
+        name: m.name,
+        lat: m.lat,
+        lng: m.lng,
+        color: m.color,
+        isLeader: m.is_leader,
+        speed: m.speed,
+        heading: m.heading,
+      }));
       setDrivers(mapped);
     }
   };
