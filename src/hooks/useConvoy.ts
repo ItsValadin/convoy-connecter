@@ -439,11 +439,11 @@ export const useConvoy = (initialCenter: [number, number]) => {
     toast("You left the convoy");
   }, [convoyId]);
 
-  // beforeunload: delete self from DB when browser/tab closes
+  // beforeunload + visibilitychange: delete self from DB when browser/tab closes
+  // visibilitychange is more reliable on mobile (iOS doesn't fire beforeunload)
   useEffect(() => {
-    const handleBeforeUnload = () => {
+    const cleanup = () => {
       if (convoyId) {
-        // Use sendBeacon for reliable cleanup on tab close
         const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/convoy_members?convoy_id=eq.${convoyId}&session_id=eq.${sessionIdRef.current}`;
         fetch(url, {
           method: "DELETE",
@@ -455,8 +455,28 @@ export const useConvoy = (initialCenter: [number, number]) => {
         });
       }
     };
+
+    const handleBeforeUnload = () => cleanup();
+
+    const handleVisibilityChange = () => {
+      // On mobile, when the page becomes hidden (app closed/switched), fire cleanup
+      if (document.visibilityState === "hidden" && convoyId) {
+        cleanup();
+        // Also broadcast leave
+        channelRef.current?.send({
+          type: "broadcast",
+          event: "leave",
+          payload: { session_id: sessionIdRef.current },
+        });
+      }
+    };
+
     window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [convoyId]);
 
   // Periodic stale member cleanup every 15s
