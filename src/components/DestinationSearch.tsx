@@ -298,7 +298,7 @@ const DestinationSearch = ({
           });
 
           if (hasLocation) {
-            const delta = opts.strictNearby ? 0.2 : 1.5;
+            const delta = opts.strictNearby ? 0.5 : 2.0;
             params.set("viewbox", `${userLng! - delta},${userLat! + delta},${userLng! + delta},${userLat! - delta}`);
             params.set("bounded", opts.strictNearby ? "1" : "0");
           }
@@ -314,6 +314,7 @@ const DestinationSearch = ({
         const responseGroups = await Promise.all([
           fetchPhoton(baseQuery, 10),
           fetchNominatim(baseQuery, { strictNearby: true, limit: 6 }),
+          fetchNominatim(baseQuery, { strictNearby: false, limit: 6 }),
           ...altQueries.map((variant) =>
             fetchPhoton(variant, 6)
           ),
