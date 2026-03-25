@@ -298,7 +298,7 @@ const DestinationSearch = ({
           });
 
           if (hasLocation) {
-            const delta = opts.strictNearby ? 0.2 : 1.5;
+            const delta = opts.strictNearby ? 0.5 : 2.0;
             params.set("viewbox", `${userLng! - delta},${userLat! + delta},${userLng! + delta},${userLat! - delta}`);
             params.set("bounded", opts.strictNearby ? "1" : "0");
           }
