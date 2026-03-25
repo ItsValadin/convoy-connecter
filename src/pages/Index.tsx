@@ -126,6 +126,24 @@ const Index = () => {
     }
   }, [convoyCode, drivers, sessionId]);
 
+  // Arrival detection: auto-clear destination when leader is within 50m
+  const hasArrivedRef = useRef(false);
+  useEffect(() => {
+    if (!destination) {
+      hasArrivedRef.current = false;
+      return;
+    }
+    if (!isLeader || hasArrivedRef.current) return;
+    const self = drivers.find((d) => d.id === sessionId);
+    if (!self) return;
+    const dist = haversineDistance(self.lat, self.lng, destination.lat, destination.lng);
+    if (dist <= 50) {
+      hasArrivedRef.current = true;
+      handleClearDestination();
+      toast.success("🎉 You've arrived! Destination reached.", { duration: 5000 });
+    }
+  }, [destination, isLeader, drivers, sessionId, handleClearDestination]);
+
   // Fetch route when destination changes (debounced to avoid spamming OSRM)
   const lastRouteFetchRef = useRef(0);
   useEffect(() => {
