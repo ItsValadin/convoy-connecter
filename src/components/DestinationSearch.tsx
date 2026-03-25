@@ -303,18 +303,48 @@ const DestinationSearch = ({
             params.set("bounded", opts.strictNearby ? "1" : "0");
           }
 
-          const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
-            headers: { "Accept-Language": "en" },
+          try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
+              headers: { "Accept-Language": "en" },
+            });
+            if (!res.ok) return [];
+            return (await res.json()) as NominatimResult[];
+          } catch {
+            return [];
+          }
+        };
+
+        // Fallback: geocode.maps.co (free Nominatim mirror)
+        const fetchFallback = async (
+          searchQuery: string,
+          limit: number
+        ): Promise<NominatimResult[]> => {
+          const params = new URLSearchParams({
+            format: "json",
+            q: searchQuery,
+            limit: String(limit),
+            addressdetails: "1",
           });
 
-          if (!res.ok) return [];
-          return (await res.json()) as NominatimResult[];
+          if (hasLocation) {
+            const delta = 2.0;
+            params.set("viewbox", `${userLng! - delta},${userLat! + delta},${userLng! + delta},${userLat! - delta}`);
+          }
+
+          try {
+            const res = await fetch(`https://geocode.maps.co/search?${params}`);
+            if (!res.ok) return [];
+            return (await res.json()) as NominatimResult[];
+          } catch {
+            return [];
+          }
         };
 
         const responseGroups = await Promise.all([
           fetchPhoton(baseQuery, 10),
           fetchNominatim(baseQuery, { strictNearby: true, limit: 6 }),
           fetchNominatim(baseQuery, { strictNearby: false, limit: 6 }),
+          fetchFallback(baseQuery, 6),
           ...altQueries.map((variant) =>
             fetchPhoton(variant, 6)
           ),
