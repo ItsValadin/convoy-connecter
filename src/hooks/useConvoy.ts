@@ -153,25 +153,43 @@ export const useConvoy = (initialCenter: [number, number]) => {
     }
 
     if (data) {
-      // Filter out stale members (not seen in 30s) and recently-left members
       const now = Date.now();
       const STALE_THRESHOLD = 30000;
-      const mapped: Driver[] = data
-        .filter((m) => {
-          if (recentlyLeftRef.current.has(m.session_id)) return false;
-          const lastSeen = new Date(m.last_seen).getTime();
-          return now - lastSeen < STALE_THRESHOLD;
-        })
-        .map((m) => ({
-          id: m.session_id,
-          name: m.name,
-          lat: m.lat,
-          lng: m.lng,
-          color: m.color,
-          isLeader: m.is_leader,
-          speed: m.speed,
-          heading: m.heading,
-        }));
+      const active: typeof data = [];
+      const staleIds: string[] = [];
+
+      for (const m of data) {
+        if (recentlyLeftRef.current.has(m.session_id)) {
+          staleIds.push(m.id);
+          continue;
+        }
+        const lastSeen = new Date(m.last_seen).getTime();
+        if (now - lastSeen >= STALE_THRESHOLD) {
+          staleIds.push(m.id);
+          continue;
+        }
+        active.push(m);
+      }
+
+      // Delete stale members from DB so they don't persist
+      if (staleIds.length > 0) {
+        supabase
+          .from("convoy_members")
+          .delete()
+          .in("id", staleIds)
+          .then();
+      }
+
+      const mapped: Driver[] = active.map((m) => ({
+        id: m.session_id,
+        name: m.name,
+        lat: m.lat,
+        lng: m.lng,
+        color: m.color,
+        isLeader: m.is_leader,
+        speed: m.speed,
+        heading: m.heading,
+      }));
       setDrivers(mapped);
     }
   };
@@ -421,11 +439,11 @@ export const useConvoy = (initialCenter: [number, number]) => {
     toast("You left the convoy");
   }, [convoyId]);
 
-  // beforeunload: delete self from DB when browser/tab closes
+  // beforeunload + visibilitychange: delete self from DB when browser/tab closes
+  // visibilitychange is more reliable on mobile (iOS doesn't fire beforeunload)
   useEffect(() => {
-    const handleBeforeUnload = () => {
+    const cleanup = () => {
       if (convoyId) {
-        // Use sendBeacon for reliable cleanup on tab close
         const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/convoy_members?convoy_id=eq.${convoyId}&session_id=eq.${sessionIdRef.current}`;
         fetch(url, {
           method: "DELETE",
@@ -437,8 +455,28 @@ export const useConvoy = (initialCenter: [number, number]) => {
         });
       }
     };
+
+    const handleBeforeUnload = () => cleanup();
+
+    const handleVisibilityChange = () => {
+      // On mobile, when the page becomes hidden (app closed/switched), fire cleanup
+      if (document.visibilityState === "hidden" && convoyId) {
+        cleanup();
+        // Also broadcast leave
+        channelRef.current?.send({
+          type: "broadcast",
+          event: "leave",
+          payload: { session_id: sessionIdRef.current },
+        });
+      }
+    };
+
     window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [convoyId]);
 
   // Periodic stale member cleanup every 15s
