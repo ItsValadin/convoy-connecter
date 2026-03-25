@@ -36,6 +36,9 @@ export const useConvoy = (initialCenter: [number, number]) => {
   const [gpsActive, setGpsActive] = useState(false);
   const [destination, setDestination] = useState<Destination | null>(null);
   const [isLeader, setIsLeader] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected">("connected");
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectAttemptRef = useRef(0);
   const sessionIdRef = useRef(generateSessionId());
   const watchIdRef = useRef<number | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
@@ -138,7 +141,21 @@ export const useConvoy = (initialCenter: [number, number]) => {
           return remaining;
         });
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          setConnectionStatus("connected");
+          reconnectAttemptRef.current = 0;
+        } else if (status === "CLOSED" || status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          setConnectionStatus("disconnected");
+          // Auto-reconnect with exponential backoff
+          const delay = Math.min(2000 * Math.pow(2, reconnectAttemptRef.current), 15000);
+          reconnectAttemptRef.current += 1;
+          if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+          reconnectTimeoutRef.current = setTimeout(() => {
+            channelRef.current?.subscribe();
+          }, delay);
+        }
+      });
   }, []);
 
   const fetchMembers = async (cId: string) => {
@@ -511,6 +528,7 @@ export const useConvoy = (initialCenter: [number, number]) => {
     gpsActive,
     destination,
     isLeader,
+    connectionStatus,
     sessionId: sessionIdRef.current,
     handleCreate,
     handleJoin,
