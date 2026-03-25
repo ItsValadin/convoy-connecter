@@ -498,21 +498,29 @@ const DestinationSearch = ({
               <span className="text-[10px] font-display text-muted-foreground uppercase tracking-wider">Recent</span>
             </div>
             <div className="max-h-48 overflow-y-auto">
-              {recents.map((r, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleSelectRecent(r)}
-                  className="w-full text-left px-3 py-2 hover:bg-primary/10 transition-colors flex items-start gap-2 border-b border-border/50 last:border-b-0"
-                >
-                  <Navigation2 className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
-                  <div className="min-w-0">
-                    <span className="text-xs text-foreground leading-tight line-clamp-1 block">{r.label}</span>
-                    {r.subtitle && (
-                      <span className="text-[10px] text-muted-foreground leading-tight line-clamp-1 block">{r.subtitle}</span>
+              {recents.map((r, i) => {
+                const dist = userLat != null && userLng != null
+                  ? formatDistance(haversineKm(userLat, userLng, r.lat, r.lng))
+                  : null;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => handleSelectRecent(r)}
+                    className="w-full text-left px-3 py-2 hover:bg-primary/10 transition-colors flex items-start gap-2 border-b border-border/50 last:border-b-0"
+                  >
+                    <Navigation2 className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <span className="text-xs text-foreground leading-tight line-clamp-1 block">{r.label}</span>
+                      {r.subtitle && (
+                        <span className="text-[10px] text-muted-foreground leading-tight line-clamp-1 block">{r.subtitle}</span>
+                      )}
+                    </div>
+                    {dist && (
+                      <span className="text-[10px] text-muted-foreground whitespace-nowrap mt-0.5 shrink-0">{dist}</span>
                     )}
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -544,6 +552,11 @@ const DestinationSearch = ({
                       </span>
                     )}
                   </div>
+                  {formatDistance(r.distanceKm) && (
+                    <span className="text-[10px] text-muted-foreground whitespace-nowrap mt-0.5 shrink-0">
+                      {formatDistance(r.distanceKm)}
+                    </span>
+                  )}
                 </button>
               );
             })}
