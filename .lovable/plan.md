@@ -1,24 +1,21 @@
 
 
-# Plan: Add Distance Display and Sort by Distance
+# Plan: Arrival Detection with Auto-Clear and Celebration
 
-## What Changes
-
-1. **Store ranked results with distance** — Change the results state from `NominatimResult[]` to include a computed `distanceKm` field, so each result carries its distance from the user.
-
-2. **Sort by distance** — When user location is available, sort results by distance (closest first) instead of the current text+intent+distance scoring. When no location, keep current ranking.
-
-3. **Display distance** — Show a formatted distance badge next to each result (e.g., "2.3 km" or "145 km"). Also show distance for recent destinations.
+## What It Does
+When the convoy leader gets within 50m of the destination, automatically clear the destination and show a celebration toast notification. This only triggers for the leader (who controls the destination).
 
 ## Technical Details
 
-**File:** `src/components/DestinationSearch.tsx`
+**File: `src/pages/Index.tsx`**
 
-- Add a `RankedResult` interface: `{ ...NominatimResult, distanceKm: number | null }`
-- Change `results` state to `RankedResult[]`
-- In the ranking logic, compute `distanceKm` using the existing `haversineKm` function and attach it to each result
-- Sort primarily by distance when user location is available
-- Format distance as: `< 1km` → meters (e.g., "850 m"), `< 100km` → one decimal (e.g., "12.3 km"), `≥ 100km` → rounded (e.g., "145 km")
-- Render distance as a small muted label on the right side of each result row
-- For recent destinations, compute distance on render using `userLat`/`userLng`
+Add a `useEffect` that watches the leader's position relative to the destination:
+- Use existing `haversineDistance` to check if `self` (leader) is within 50m of `destination`
+- Use a ref to prevent repeated triggers
+- When triggered: call `handleClearDestination()`, show a celebratory `toast.success` with a party message (e.g., "You've arrived! Destination reached.")
+- Reset the arrival ref when destination changes
+
+The effect depends on `self.lat`, `self.lng`, `destination`, `isLeader`, and `handleClearDestination`. Since `handleClearDestination` already broadcasts the clear to all convoy members via the database, all members will see the destination removed automatically.
+
+**No other files need changes** — `haversineDistance` is already exported from `useNavigationAlerts`, `handleClearDestination` handles the full cleanup, and `toast` from Sonner is already imported.
 
