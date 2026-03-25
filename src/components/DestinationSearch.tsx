@@ -20,6 +20,17 @@ interface NominatimResult {
   };
 }
 
+interface RankedResult extends NominatimResult {
+  distanceKm: number | null;
+}
+
+function formatDistance(km: number | null | undefined): string | null {
+  if (km == null) return null;
+  if (km < 1) return `${Math.round(km * 1000)} m`;
+  if (km < 100) return `${km.toFixed(1)} km`;
+  return `${Math.round(km)} km`;
+}
+
 interface RecentDestination {
   lat: number;
   lng: number;
@@ -115,7 +126,7 @@ const DestinationSearch = ({
   userLng,
 }: DestinationSearchProps) => {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<NominatimResult[]>([]);
+  const [results, setResults] = useState<RankedResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [recents, setRecents] = useState<RecentDestination[]>([]);
@@ -361,24 +372,22 @@ const DestinationSearch = ({
 
         const ranked = unique
           .map((r) => {
+            const distKm = hasLocation
+              ? haversineKm(userLat!, userLng!, parseFloat(r.lat), parseFloat(r.lon))
+              : null;
             const textScore = textRelevanceScore(queryNormalized, r);
             const boost = intentBoost(queryNormalized, r);
-            const distanceScore = hasLocation
-              ? Math.max(
-                  0,
-                  24 -
-                    haversineKm(
-                      userLat!,
-                      userLng!,
-                      parseFloat(r.lat),
-                      parseFloat(r.lon)
-                    )
-                )
-              : 0;
+            const distanceScore = distKm != null ? Math.max(0, 24 - distKm) : 0;
 
-            return { r, score: textScore * 10 + boost + distanceScore };
+            return { r: { ...r, distanceKm: distKm } as RankedResult, score: textScore * 10 + boost + distanceScore };
           })
-          .sort((a, b) => b.score - a.score)
+          .sort((a, b) => {
+            // When user location available, sort by distance primarily
+            if (hasLocation && a.r.distanceKm != null && b.r.distanceKm != null) {
+              return a.r.distanceKm - b.r.distanceKm;
+            }
+            return b.score - a.score;
+          })
           .map((entry) => entry.r);
 
         setResults(ranked.slice(0, 6));
