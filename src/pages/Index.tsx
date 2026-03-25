@@ -220,6 +220,7 @@ const Index = () => {
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">
+      <ConnectionBanner visible={connectionStatus === "disconnected" && !!convoyCode} />
       {/* Next turn banner + ETA */}
       {convoyCode && destination && nextStep && nextStep.instruction && (
         <div className="absolute top-[calc(1rem+env(safe-area-inset-top,0px))] sm:top-4 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-lg">
