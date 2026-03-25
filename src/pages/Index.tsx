@@ -9,7 +9,7 @@ import ConvoyPanel from "@/components/ConvoyPanel";
 import NavigationPanel, { type RouteInfo } from "@/components/NavigationPanel";
 import { useNavigationAlerts, haversineDistance } from "@/hooks/useNavigationAlerts";
 import { toast } from "sonner";
-import { Crosshair, Volume2, VolumeX, Navigation, Clock, Gauge, Download, X, Sun, Moon } from "lucide-react";
+import { Crosshair, Volume2, VolumeX, Navigation, Clock, Gauge, Download, X, Sun, Moon, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConvoy } from "@/hooks/useConvoy";
 import { fetchRoute, type RouteGeometry } from "@/lib/routing";
@@ -40,6 +40,9 @@ const Index = () => {
     return (localStorage.getItem("convoy-map-theme") as "dark" | "light") || "dark";
   });
   const [routeLoading, setRouteLoading] = useState(false);
+  const [offRoute, setOffRoute] = useState(false);
+  const offRouteCounterRef = useRef(0);
+  const lastOffRouteCheckRef = useRef(0);
 
   const {
     convoyCode,
@@ -146,32 +149,60 @@ const Index = () => {
     }
   }, [destination, isLeader, drivers, sessionId, handleClearDestination]);
 
-  // Fetch route when destination changes (debounced to avoid spamming OSRM)
+  // Off-route detection: check if driver is >100m from nearest route polyline point
+  const OFF_ROUTE_THRESHOLD_M = 100;
+  const OFF_ROUTE_COOLDOWN_MS = 10000;
+  useEffect(() => {
+    if (!routeCoordinates?.length || !destination || !convoyCode) return;
+    const selfDriver = drivers.find((d) => d.id === sessionId);
+    if (!selfDriver) return;
+
+    const now = Date.now();
+    if (now - lastOffRouteCheckRef.current < OFF_ROUTE_COOLDOWN_MS) return;
+
+    let minDist = Infinity;
+    for (const [lat, lng] of routeCoordinates) {
+      const dist = haversineDistance(selfDriver.lat, selfDriver.lng, lat, lng);
+      if (dist < minDist) minDist = dist;
+      if (dist < OFF_ROUTE_THRESHOLD_M) break; // early exit — on route
+    }
+
+    if (minDist > OFF_ROUTE_THRESHOLD_M) {
+      lastOffRouteCheckRef.current = now;
+      setOffRoute(true);
+      lastRouteFetchRef.current = 0; // allow immediate re-fetch
+      offRouteCounterRef.current += 1;
+    }
+  }, [drivers, sessionId, routeCoordinates, destination, convoyCode]);
+
+  // Fetch route when destination changes or off-route triggers recalculation
   const lastRouteFetchRef = useRef(0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const offRouteTrigger = offRouteCounterRef.current;
   useEffect(() => {
     if (!destination) {
       setRouteInfo(null);
       setRouteCoordinates(null);
       lastRouteFetchRef.current = 0;
+      setOffRoute(false);
       return;
     }
 
     const self = drivers.find((d) => d.id === sessionId);
     if (!self) return;
 
-    // Throttle: re-fetch at most every 15s for position changes, instant for new destination
-    const now = Date.now();
+    const isRecalc = offRoute;
     const timerId = setTimeout(() => {
       if (Date.now() - lastRouteFetchRef.current < 10000) return;
       lastRouteFetchRef.current = Date.now();
       setRouteLoading(true);
       fetchRoute(self.lat, self.lng, destination.lat, destination.lng).then((result) => {
         setRouteLoading(false);
+        setOffRoute(false);
         if (result) {
           setRouteInfo(result.info);
           setRouteCoordinates(result.coordinates);
-          // Auto-fit map to show driver + destination on first route
-          if (mapInstanceRef.current) {
+          if (!isRecalc && mapInstanceRef.current) {
             const bounds = L.latLngBounds(
               [self.lat, self.lng],
               [destination.lat, destination.lng]
@@ -184,7 +215,7 @@ const Index = () => {
 
     return () => clearTimeout(timerId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [destination, sessionId]);
+  }, [destination, sessionId, offRouteTrigger]);
 
   // Voice turn-by-turn alerts
   const self = drivers.find((d) => d.id === sessionId);
@@ -221,6 +252,13 @@ const Index = () => {
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">
       <ConnectionBanner visible={connectionStatus === "disconnected" && !!convoyCode} />
+      {/* Off-route recalculating banner */}
+      {offRoute && convoyCode && destination && (
+        <div className="fixed top-[calc(env(safe-area-inset-top,0px)+2.5rem)] left-0 right-0 z-50 bg-primary text-primary-foreground px-4 py-2 flex items-center justify-center gap-2 text-sm font-medium shadow-lg animate-in slide-in-from-top fade-in duration-300">
+          <RotateCw className="h-4 w-4 animate-spin" />
+          <span>Off route — recalculating...</span>
+        </div>
+      )}
       {/* Next turn banner + ETA */}
       {convoyCode && destination && nextStep && nextStep.instruction && (
         <div className="absolute top-[calc(1rem+env(safe-area-inset-top,0px))] sm:top-4 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-lg">
