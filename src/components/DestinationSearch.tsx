@@ -20,6 +20,17 @@ interface NominatimResult {
   };
 }
 
+interface RankedResult extends NominatimResult {
+  distanceKm: number | null;
+}
+
+function formatDistance(km: number | null | undefined): string | null {
+  if (km == null) return null;
+  if (km < 1) return `${Math.round(km * 1000)} m`;
+  if (km < 100) return `${km.toFixed(1)} km`;
+  return `${Math.round(km)} km`;
+}
+
 interface RecentDestination {
   lat: number;
   lng: number;
@@ -115,7 +126,7 @@ const DestinationSearch = ({
   userLng,
 }: DestinationSearchProps) => {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<NominatimResult[]>([]);
+  const [results, setResults] = useState<RankedResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [recents, setRecents] = useState<RecentDestination[]>([]);
@@ -361,24 +372,22 @@ const DestinationSearch = ({
 
         const ranked = unique
           .map((r) => {
+            const distKm = hasLocation
+              ? haversineKm(userLat!, userLng!, parseFloat(r.lat), parseFloat(r.lon))
+              : null;
             const textScore = textRelevanceScore(queryNormalized, r);
             const boost = intentBoost(queryNormalized, r);
-            const distanceScore = hasLocation
-              ? Math.max(
-                  0,
-                  24 -
-                    haversineKm(
-                      userLat!,
-                      userLng!,
-                      parseFloat(r.lat),
-                      parseFloat(r.lon)
-                    )
-                )
-              : 0;
+            const distanceScore = distKm != null ? Math.max(0, 24 - distKm) : 0;
 
-            return { r, score: textScore * 10 + boost + distanceScore };
+            return { r: { ...r, distanceKm: distKm } as RankedResult, score: textScore * 10 + boost + distanceScore };
           })
-          .sort((a, b) => b.score - a.score)
+          .sort((a, b) => {
+            // When user location available, sort by distance primarily
+            if (hasLocation && a.r.distanceKm != null && b.r.distanceKm != null) {
+              return a.r.distanceKm - b.r.distanceKm;
+            }
+            return b.score - a.score;
+          })
           .map((entry) => entry.r);
 
         setResults(ranked.slice(0, 6));
@@ -489,21 +498,29 @@ const DestinationSearch = ({
               <span className="text-[10px] font-display text-muted-foreground uppercase tracking-wider">Recent</span>
             </div>
             <div className="max-h-48 overflow-y-auto">
-              {recents.map((r, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleSelectRecent(r)}
-                  className="w-full text-left px-3 py-2 hover:bg-primary/10 transition-colors flex items-start gap-2 border-b border-border/50 last:border-b-0"
-                >
-                  <Navigation2 className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
-                  <div className="min-w-0">
-                    <span className="text-xs text-foreground leading-tight line-clamp-1 block">{r.label}</span>
-                    {r.subtitle && (
-                      <span className="text-[10px] text-muted-foreground leading-tight line-clamp-1 block">{r.subtitle}</span>
+              {recents.map((r, i) => {
+                const dist = userLat != null && userLng != null
+                  ? formatDistance(haversineKm(userLat, userLng, r.lat, r.lng))
+                  : null;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => handleSelectRecent(r)}
+                    className="w-full text-left px-3 py-2 hover:bg-primary/10 transition-colors flex items-start gap-2 border-b border-border/50 last:border-b-0"
+                  >
+                    <Navigation2 className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <span className="text-xs text-foreground leading-tight line-clamp-1 block">{r.label}</span>
+                      {r.subtitle && (
+                        <span className="text-[10px] text-muted-foreground leading-tight line-clamp-1 block">{r.subtitle}</span>
+                      )}
+                    </div>
+                    {dist && (
+                      <span className="text-[10px] text-muted-foreground whitespace-nowrap mt-0.5 shrink-0">{dist}</span>
                     )}
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -535,6 +552,11 @@ const DestinationSearch = ({
                       </span>
                     )}
                   </div>
+                  {formatDistance(r.distanceKm) && (
+                    <span className="text-[10px] text-muted-foreground whitespace-nowrap mt-0.5 shrink-0">
+                      {formatDistance(r.distanceKm)}
+                    </span>
+                  )}
                 </button>
               );
             })}
