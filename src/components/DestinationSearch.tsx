@@ -314,6 +314,7 @@ const DestinationSearch = ({
         const responseGroups = await Promise.all([
           fetchPhoton(baseQuery, 10),
           fetchNominatim(baseQuery, { strictNearby: true, limit: 6 }),
+          fetchNominatim(baseQuery, { strictNearby: false, limit: 6 }),
           ...altQueries.map((variant) =>
             fetchPhoton(variant, 6)
           ),
