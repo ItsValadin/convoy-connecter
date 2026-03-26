@@ -410,6 +410,33 @@ const Index = () => {
           </div>
       )}
       <div className="absolute bottom-28 right-2 sm:right-4 z-10 flex flex-col gap-2">
+        {convoyCode && (
+          <div className="relative">
+            <Button
+              size="icon"
+              variant="outline"
+              className="bg-card/90 backdrop-blur-xl border-border hover:bg-destructive/20 hover:border-destructive/50"
+              onClick={() => setShowHazardPicker((v) => !v)}
+              title="Report hazard"
+            >
+              <AlertTriangle className="w-5 h-5 text-convoy-amber" />
+            </Button>
+            {showHazardPicker && (
+              <div className="absolute right-12 top-0 bg-card/95 backdrop-blur-xl border border-border rounded-xl p-2 shadow-xl flex flex-col gap-1 min-w-[140px] animate-in slide-in-from-right-2 fade-in duration-200 z-50">
+                {HAZARD_TYPES.map((h) => (
+                  <button
+                    key={h.type}
+                    onClick={() => handleDropHazard(h.type)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-foreground hover:bg-primary/20 transition-colors text-left"
+                  >
+                    <span className="text-base">{h.emoji}</span>
+                    <span className="font-display">{h.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <Button
           size="icon"
           variant="outline"
