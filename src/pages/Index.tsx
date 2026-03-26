@@ -311,10 +311,28 @@ const Index = () => {
         center={center}
         destination={destination}
         routeCoordinates={routeCoordinates}
+        hazards={hazards.map((h) => ({
+          id: h.id,
+          lat: h.lat,
+          lng: h.lng,
+          hazardType: h.hazardType,
+          reporterName: h.reporterName,
+          reporterColor: h.reporterColor,
+          note: h.note,
+          createdAt: h.createdAt,
+        }))}
         isLeader={isLeader}
         mapTheme={mapTheme}
         onMapReady={(map) => { mapInstanceRef.current = map; }}
         onMapClick={isLeader ? handleSetDestination : undefined}
+        onHazardClick={(id) => {
+          const self = drivers.find((d) => d.id === sessionId);
+          const hazard = hazards.find((h) => h.id === id);
+          if (hazard && self && hazard.sessionId === sessionId) {
+            removeHazard(id);
+            toast("Hazard removed");
+          }
+        }}
       />
       {convoyCode && (
         <OffscreenIndicators
