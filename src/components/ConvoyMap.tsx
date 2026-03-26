@@ -325,10 +325,49 @@ const ConvoyMap = ({ drivers, center, destination, routeCoordinates, hazards = [
     }
   }, [routeCoordinates]);
 
+  // Hazard markers
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    const currentIds = new Set(hazards.map((h) => h.id));
+
+    // Remove markers no longer present
+    hazardMarkersRef.current.forEach((marker, id) => {
+      if (!currentIds.has(id)) {
+        mapRef.current!.removeLayer(marker);
+        hazardMarkersRef.current.delete(id);
+      }
+    });
+
+    // Add new markers
+    hazards.forEach((hazard) => {
+      if (!hazardMarkersRef.current.has(hazard.id)) {
+        const age = Date.now() - new Date(hazard.createdAt).getTime();
+        const agoMin = Math.floor(age / 60000);
+        const agoLabel = agoMin < 1 ? "just now" : `${agoMin}m ago`;
+        const marker = L.marker([hazard.lat, hazard.lng], {
+          icon: createHazardIcon(hazard.hazardType),
+        })
+          .bindTooltip(`${hazard.reporterName} • ${agoLabel}${hazard.note ? `: ${hazard.note}` : ""}`, {
+            direction: "top",
+            className: "convoy-hazard-tooltip",
+            offset: [0, -20],
+          })
+          .on("click", () => onHazardClickRef.current?.(hazard.id))
+          .addTo(mapRef.current!);
+        hazardMarkersRef.current.set(hazard.id, marker);
+      }
+    });
+  }, [hazards]);
+
   return (
     <>
       <style>{`
         .convoy-marker { background: none !important; border: none !important; }
+        @keyframes hazard-pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.15); }
+        }
         .convoy-tooltip {
           background: hsl(220 18% 14% / 0.95) !important;
           color: hsl(152 80% 50%) !important;
