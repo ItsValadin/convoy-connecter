@@ -501,7 +501,7 @@ const Index = () => {
 
       {/* Active speaker indicator — below convoy panel */}
       {activeSpeaker && convoyCode && (
-        <div className="absolute top-[calc(7rem+env(safe-area-inset-top,0px))] sm:top-20 left-2 sm:left-4 z-10 animate-in fade-in slide-in-from-left duration-300">
+        <div className="absolute top-[calc(20rem+env(safe-area-inset-top,0px))] sm:top-80 left-2 sm:left-4 z-10 animate-in fade-in slide-in-from-left duration-300">
           <div className="bg-card/95 backdrop-blur-xl border border-border rounded-full px-3 py-1.5 flex items-center gap-2 shadow-lg">
             <div className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: activeSpeaker.color }} />
             <span className="font-display text-xs text-foreground font-medium">{activeSpeaker.name}</span>
