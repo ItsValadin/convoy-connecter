@@ -359,6 +359,7 @@ const Index = () => {
         drivers={drivers}
         convoyCode={convoyCode}
         destination={destination}
+        activeSpeakerId={activeSpeaker?.id ?? null}
         onCreateConvoy={handleCreate}
         onJoinConvoy={handleJoin}
         onLeaveConvoy={handleLeave}
