@@ -39,7 +39,7 @@ const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
 };
 
 const uint8ToArrayBuffer = (bytes: Uint8Array) =>
-  bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+  bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 
 export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }: WalkieTalkieOptions) => {
   const [recording, setRecording] = useState(false);
