@@ -61,6 +61,24 @@ const Index = () => {
     handleClearDestination,
   } = useConvoy(center);
 
+  const { hazards, addHazard, removeHazard } = useHazards(convoyId);
+  const [showHazardPicker, setShowHazardPicker] = useState(false);
+
+  const HAZARD_TYPES: { type: HazardType; emoji: string; label: string }[] = [
+    { type: "warning", emoji: "⚠️", label: "Warning" },
+    { type: "accident", emoji: "🚗", label: "Accident" },
+    { type: "police", emoji: "🚔", label: "Police" },
+    { type: "road_closed", emoji: "🚧", label: "Road Closed" },
+    { type: "debris", emoji: "🪨", label: "Debris" },
+  ];
+
+  const handleDropHazard = useCallback((type: HazardType) => {
+    const self = drivers.find((d) => d.id === sessionId);
+    if (!self) return;
+    addHazard(self.lat, self.lng, type, sessionId, self.name, self.color);
+    setShowHazardPicker(false);
+  }, [drivers, sessionId, addHazard]);
+
   const [followMode, setFollowMode] = useState(false);
 
   const handleCenterOnMe = useCallback(() => {
