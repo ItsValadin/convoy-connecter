@@ -10,8 +10,9 @@ import NavigationPanel, { type RouteInfo } from "@/components/NavigationPanel";
 import { useNavigationAlerts, haversineDistance } from "@/hooks/useNavigationAlerts";
 import { useHazards, type HazardType, getHazardLabel } from "@/hooks/useHazards";
 import { useProximityAlerts } from "@/hooks/useProximityAlerts";
+import { useWalkieTalkie } from "@/hooks/useWalkieTalkie";
 import { toast } from "sonner";
-import { Crosshair, Volume2, VolumeX, Navigation, Clock, Gauge, Download, X, Sun, Moon, RotateCw, AlertTriangle } from "lucide-react";
+import { Crosshair, Volume2, VolumeX, Navigation, Clock, Gauge, Download, X, Sun, Moon, RotateCw, AlertTriangle, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConvoy } from "@/hooks/useConvoy";
 import { fetchRoute, type RouteGeometry } from "@/lib/routing";
@@ -65,6 +66,14 @@ const Index = () => {
   const { hazards, addHazard, removeHazard } = useHazards(convoyId);
   const [showHazardPicker, setShowHazardPicker] = useState(false);
   useProximityAlerts(drivers, sessionId, !!convoyCode);
+
+  const selfDriver = drivers.find((d) => d.id === sessionId);
+  const { recording, activeSpeaker, startRecording, stopRecording } = useWalkieTalkie({
+    convoyId,
+    sessionId,
+    senderName: selfDriver?.name ?? "Unknown",
+    senderColor: selfDriver?.color ?? "#22c55e",
+  });
 
   const HAZARD_TYPES: { type: HazardType; emoji: string; label: string }[] = [
     { type: "warning", emoji: "⚠️", label: "Warning" },
