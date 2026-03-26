@@ -29,6 +29,17 @@ interface Destination {
   label?: string | null;
 }
 
+interface HazardPin {
+  id: string;
+  lat: number;
+  lng: number;
+  hazardType: string;
+  reporterName: string;
+  reporterColor: string;
+  note: string | null;
+  createdAt: string;
+}
+
 type MapTheme = "dark" | "light";
 
 interface ConvoyMapProps {
@@ -36,10 +47,12 @@ interface ConvoyMapProps {
   center: [number, number];
   destination?: Destination | null;
   routeCoordinates?: [number, number][] | null;
+  hazards?: HazardPin[];
   isLeader?: boolean;
   mapTheme?: MapTheme;
   onMapReady?: (map: L.Map) => void;
   onMapClick?: (lat: number, lng: number) => void;
+  onHazardClick?: (hazardId: string) => void;
 }
 
 const createDriverIcon = (color: string, isLeader: boolean, speed?: number | null, heading?: number | null) => {
@@ -91,6 +104,34 @@ const createDestinationIcon = () => {
   });
 };
 
+const HAZARD_ICONS: Record<string, string> = {
+  warning: "⚠️",
+  accident: "🚗",
+  police: "🚔",
+  road_closed: "🚧",
+  debris: "🪨",
+};
+
+const createHazardIcon = (hazardType: string) => {
+  const emoji = HAZARD_ICONS[hazardType] || "⚠️";
+  const svg = `<div style="
+    width: 36px; height: 36px;
+    background: hsl(0 0% 10% / 0.9);
+    border: 2px solid hsl(45 100% 60%);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; line-height: 1;
+    box-shadow: 0 0 12px hsl(45 100% 50% / 0.4);
+    animation: hazard-pulse 2s ease-in-out infinite;
+  ">${emoji}</div>`;
+  return L.divIcon({
+    html: svg,
+    className: "convoy-marker",
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+  });
+};
+
 const LERP_DURATION = 1000; // 1 second interpolation
 
 const TILE_URLS: Record<MapTheme, string> = {
@@ -98,7 +139,7 @@ const TILE_URLS: Record<MapTheme, string> = {
   light: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
 };
 
-const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, mapTheme = "dark", onMapReady, onMapClick }: ConvoyMapProps) => {
+const ConvoyMap = ({ drivers, center, destination, routeCoordinates, hazards = [], isLeader, mapTheme = "dark", onMapReady, onMapClick, onHazardClick }: ConvoyMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const animationsRef = useRef<Map<string, AnimationState>>(new Map());
@@ -106,6 +147,9 @@ const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, m
   const polylineRef = useRef<L.Polyline | null>(null);
   const routePolylineRef = useRef<L.Polyline | null>(null);
   const destinationMarkerRef = useRef<L.Marker | null>(null);
+  const hazardMarkersRef = useRef<Map<string, L.Marker>>(new Map());
+  const onHazardClickRef = useRef(onHazardClick);
+  onHazardClickRef.current = onHazardClick;
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const onMapClickRef = useRef(onMapClick);
   onMapClickRef.current = onMapClick;
@@ -281,10 +325,49 @@ const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, m
     }
   }, [routeCoordinates]);
 
+  // Hazard markers
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    const currentIds = new Set(hazards.map((h) => h.id));
+
+    // Remove markers no longer present
+    hazardMarkersRef.current.forEach((marker, id) => {
+      if (!currentIds.has(id)) {
+        mapRef.current!.removeLayer(marker);
+        hazardMarkersRef.current.delete(id);
+      }
+    });
+
+    // Add new markers
+    hazards.forEach((hazard) => {
+      if (!hazardMarkersRef.current.has(hazard.id)) {
+        const age = Date.now() - new Date(hazard.createdAt).getTime();
+        const agoMin = Math.floor(age / 60000);
+        const agoLabel = agoMin < 1 ? "just now" : `${agoMin}m ago`;
+        const marker = L.marker([hazard.lat, hazard.lng], {
+          icon: createHazardIcon(hazard.hazardType),
+        })
+          .bindTooltip(`${hazard.reporterName} • ${agoLabel}${hazard.note ? `: ${hazard.note}` : ""}`, {
+            direction: "top",
+            className: "convoy-hazard-tooltip",
+            offset: [0, -20],
+          })
+          .on("click", () => onHazardClickRef.current?.(hazard.id))
+          .addTo(mapRef.current!);
+        hazardMarkersRef.current.set(hazard.id, marker);
+      }
+    });
+  }, [hazards]);
+
   return (
     <>
       <style>{`
         .convoy-marker { background: none !important; border: none !important; }
+        @keyframes hazard-pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.15); }
+        }
         .convoy-tooltip {
           background: hsl(220 18% 14% / 0.95) !important;
           color: hsl(152 80% 50%) !important;
@@ -308,6 +391,17 @@ const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, m
           box-shadow: 0 0 15px hsl(0 80% 50% / 0.3) !important;
         }
         .convoy-destination-tooltip::before { border-top-color: hsl(0 80% 60% / 0.5) !important; }
+        .convoy-hazard-tooltip {
+          background: hsl(45 100% 20% / 0.95) !important;
+          color: hsl(45 100% 80%) !important;
+          border: 1px solid hsl(45 100% 50% / 0.5) !important;
+          border-radius: 6px !important;
+          font-family: 'JetBrains Mono', monospace !important;
+          font-size: 11px !important;
+          padding: 4px 8px !important;
+          box-shadow: 0 0 10px hsl(45 100% 50% / 0.2) !important;
+        }
+        .convoy-hazard-tooltip::before { border-top-color: hsl(45 100% 50% / 0.5) !important; }
         .leaflet-control-zoom a {
           background: hsl(220 18% 14% / 0.9) !important;
           color: hsl(152 80% 50%) !important;

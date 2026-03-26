@@ -8,8 +8,9 @@ import ConnectionBanner from "@/components/ConnectionBanner";
 import ConvoyPanel from "@/components/ConvoyPanel";
 import NavigationPanel, { type RouteInfo } from "@/components/NavigationPanel";
 import { useNavigationAlerts, haversineDistance } from "@/hooks/useNavigationAlerts";
+import { useHazards, type HazardType, getHazardLabel } from "@/hooks/useHazards";
 import { toast } from "sonner";
-import { Crosshair, Volume2, VolumeX, Navigation, Clock, Gauge, Download, X, Sun, Moon, RotateCw } from "lucide-react";
+import { Crosshair, Volume2, VolumeX, Navigation, Clock, Gauge, Download, X, Sun, Moon, RotateCw, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConvoy } from "@/hooks/useConvoy";
 import { fetchRoute, type RouteGeometry } from "@/lib/routing";
@@ -59,6 +60,24 @@ const Index = () => {
     handleSetDestination,
     handleClearDestination,
   } = useConvoy(center);
+
+  const { hazards, addHazard, removeHazard } = useHazards(convoyId);
+  const [showHazardPicker, setShowHazardPicker] = useState(false);
+
+  const HAZARD_TYPES: { type: HazardType; emoji: string; label: string }[] = [
+    { type: "warning", emoji: "⚠️", label: "Warning" },
+    { type: "accident", emoji: "🚗", label: "Accident" },
+    { type: "police", emoji: "🚔", label: "Police" },
+    { type: "road_closed", emoji: "🚧", label: "Road Closed" },
+    { type: "debris", emoji: "🪨", label: "Debris" },
+  ];
+
+  const handleDropHazard = useCallback((type: HazardType) => {
+    const self = drivers.find((d) => d.id === sessionId);
+    if (!self) return;
+    addHazard(self.lat, self.lng, type, sessionId, self.name, self.color);
+    setShowHazardPicker(false);
+  }, [drivers, sessionId, addHazard]);
 
   const [followMode, setFollowMode] = useState(false);
 
@@ -292,10 +311,28 @@ const Index = () => {
         center={center}
         destination={destination}
         routeCoordinates={routeCoordinates}
+        hazards={hazards.map((h) => ({
+          id: h.id,
+          lat: h.lat,
+          lng: h.lng,
+          hazardType: h.hazardType,
+          reporterName: h.reporterName,
+          reporterColor: h.reporterColor,
+          note: h.note,
+          createdAt: h.createdAt,
+        }))}
         isLeader={isLeader}
         mapTheme={mapTheme}
         onMapReady={(map) => { mapInstanceRef.current = map; }}
         onMapClick={isLeader ? handleSetDestination : undefined}
+        onHazardClick={(id) => {
+          const self = drivers.find((d) => d.id === sessionId);
+          const hazard = hazards.find((h) => h.id === id);
+          if (hazard && self && hazard.sessionId === sessionId) {
+            removeHazard(id);
+            toast("Hazard removed");
+          }
+        }}
       />
       {convoyCode && (
         <OffscreenIndicators
@@ -373,6 +410,33 @@ const Index = () => {
           </div>
       )}
       <div className="absolute bottom-28 right-2 sm:right-4 z-10 flex flex-col gap-2">
+        {convoyCode && (
+          <div className="relative">
+            <Button
+              size="icon"
+              variant="outline"
+              className="bg-card/90 backdrop-blur-xl border-border hover:bg-destructive/20 hover:border-destructive/50"
+              onClick={() => setShowHazardPicker((v) => !v)}
+              title="Report hazard"
+            >
+              <AlertTriangle className="w-5 h-5 text-convoy-amber" />
+            </Button>
+            {showHazardPicker && (
+              <div className="absolute right-12 top-0 bg-card/95 backdrop-blur-xl border border-border rounded-xl p-2 shadow-xl flex flex-col gap-1 min-w-[140px] animate-in slide-in-from-right-2 fade-in duration-200 z-50">
+                {HAZARD_TYPES.map((h) => (
+                  <button
+                    key={h.type}
+                    onClick={() => handleDropHazard(h.type)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-foreground hover:bg-primary/20 transition-colors text-left"
+                  >
+                    <span className="text-base">{h.emoji}</span>
+                    <span className="font-display">{h.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <Button
           size="icon"
           variant="outline"

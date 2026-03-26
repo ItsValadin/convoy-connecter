@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      convoy_hazards: {
+        Row: {
+          convoy_id: string
+          created_at: string
+          hazard_type: string
+          id: string
+          lat: number
+          lng: number
+          note: string | null
+          reporter_color: string
+          reporter_name: string
+          session_id: string
+        }
+        Insert: {
+          convoy_id: string
+          created_at?: string
+          hazard_type?: string
+          id?: string
+          lat: number
+          lng: number
+          note?: string | null
+          reporter_color?: string
+          reporter_name: string
+          session_id: string
+        }
+        Update: {
+          convoy_id?: string
+          created_at?: string
+          hazard_type?: string
+          id?: string
+          lat?: number
+          lng?: number
+          note?: string | null
+          reporter_color?: string
+          reporter_name?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "convoy_hazards_convoy_id_fkey"
+            columns: ["convoy_id"]
+            isOneToOne: false
+            referencedRelation: "convoys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       convoy_members: {
         Row: {
           color: string
