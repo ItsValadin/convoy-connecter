@@ -364,6 +364,7 @@ export const useConvoy = (initialCenter: [number, number]) => {
     setConvoyCode(code);
     setConvoyId(convoy.id);
     setIsLeader(true);
+    saveSession({ convoyId: convoy.id, convoyCode: code, sessionId: sessionIdRef.current, name, color: DRIVER_COLORS[colorIdx], isLeader: true });
     await fetchMembers(convoy.id);
     subscribeToConvoy(convoy.id);
     startGpsTracking();
@@ -413,6 +414,7 @@ export const useConvoy = (initialCenter: [number, number]) => {
     setConvoyCode(code.toUpperCase());
     setConvoyId(convoy.id);
     setIsLeader(false);
+    saveSession({ convoyId: convoy.id, convoyCode: code.toUpperCase(), sessionId: sessionIdRef.current, name, color: DRIVER_COLORS[colorIdx], isLeader: false });
     await fetchMembers(convoy.id);
     await fetchDestination(convoy.id);
     subscribeToConvoy(convoy.id);
@@ -487,6 +489,7 @@ export const useConvoy = (initialCenter: [number, number]) => {
       dbIntervalRef.current = null;
     }
 
+    clearSession();
     setConvoyCode(null);
     setConvoyId(null);
     setDrivers([]);
