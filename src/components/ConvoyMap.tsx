@@ -391,6 +391,17 @@ const ConvoyMap = ({ drivers, center, destination, routeCoordinates, hazards = [
           box-shadow: 0 0 15px hsl(0 80% 50% / 0.3) !important;
         }
         .convoy-destination-tooltip::before { border-top-color: hsl(0 80% 60% / 0.5) !important; }
+        .convoy-hazard-tooltip {
+          background: hsl(45 100% 20% / 0.95) !important;
+          color: hsl(45 100% 80%) !important;
+          border: 1px solid hsl(45 100% 50% / 0.5) !important;
+          border-radius: 6px !important;
+          font-family: 'JetBrains Mono', monospace !important;
+          font-size: 11px !important;
+          padding: 4px 8px !important;
+          box-shadow: 0 0 10px hsl(45 100% 50% / 0.2) !important;
+        }
+        .convoy-hazard-tooltip::before { border-top-color: hsl(45 100% 50% / 0.5) !important; }
         .leaflet-control-zoom a {
           background: hsl(220 18% 14% / 0.9) !important;
           color: hsl(152 80% 50%) !important;
