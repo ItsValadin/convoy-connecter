@@ -145,6 +145,15 @@ export const useConvoy = (initialCenter: [number, number]) => {
         if (status === "SUBSCRIBED") {
           setConnectionStatus("connected");
           reconnectAttemptRef.current = 0;
+          // Re-sync members and refresh our last_seen on reconnect
+          fetchMembers(cId);
+          const pos = latestPositionRef.current;
+          supabase
+            .from("convoy_members")
+            .update({ lat: pos.lat, lng: pos.lng, speed: pos.speed, heading: pos.heading, last_seen: new Date().toISOString() })
+            .eq("convoy_id", cId)
+            .eq("session_id", sessionIdRef.current)
+            .then();
         } else if (status === "CLOSED" || status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
           setConnectionStatus("disconnected");
           // Auto-reconnect with exponential backoff
@@ -171,7 +180,7 @@ export const useConvoy = (initialCenter: [number, number]) => {
 
     if (data) {
       const now = Date.now();
-      const STALE_THRESHOLD = 30000;
+      const STALE_THRESHOLD = 60000;
       const active: typeof data = [];
       const staleIds: string[] = [];
 
@@ -456,10 +465,10 @@ export const useConvoy = (initialCenter: [number, number]) => {
     toast("You left the convoy");
   }, [convoyId]);
 
-  // beforeunload + visibilitychange: delete self from DB when browser/tab closes
-  // visibilitychange is more reliable on mobile (iOS doesn't fire beforeunload)
+  // beforeunload: delete self from DB when browser/tab actually closes
+  // visibilitychange: on hidden just stop syncing, on visible re-sync (don't delete — user may be switching apps)
   useEffect(() => {
-    const cleanup = () => {
+    const cleanupOnClose = () => {
       if (convoyId) {
         const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/convoy_members?convoy_id=eq.${convoyId}&session_id=eq.${sessionIdRef.current}`;
         fetch(url, {
@@ -470,22 +479,39 @@ export const useConvoy = (initialCenter: [number, number]) => {
           },
           keepalive: true,
         });
-      }
-    };
-
-    const handleBeforeUnload = () => cleanup();
-
-    const handleVisibilityChange = () => {
-      // On mobile, when the page becomes hidden (app closed/switched), fire cleanup
-      if (document.visibilityState === "hidden" && convoyId) {
-        cleanup();
-        // Also broadcast leave
+        // Best-effort broadcast leave
         channelRef.current?.send({
           type: "broadcast",
           event: "leave",
           payload: { session_id: sessionIdRef.current },
         });
       }
+    };
+
+    const handleBeforeUnload = () => cleanupOnClose();
+
+    const handleVisibilityChange = () => {
+      if (!convoyId) return;
+
+      if (document.visibilityState === "visible") {
+        // User returned — immediately refresh last_seen so we don't get pruned
+        const pos = latestPositionRef.current;
+        supabase
+          .from("convoy_members")
+          .update({ lat: pos.lat, lng: pos.lng, speed: pos.speed, heading: pos.heading, last_seen: new Date().toISOString() })
+          .eq("convoy_id", convoyId)
+          .eq("session_id", sessionIdRef.current)
+          .then(({ data, error }) => {
+            if (error) console.error("Failed to refresh last_seen on resume:", error);
+          });
+        // Re-fetch members to resync state
+        fetchMembers(convoyId);
+        // Re-subscribe channel if it went stale
+        if (channelRef.current) {
+          channelRef.current.subscribe();
+        }
+      }
+      // On hidden: do nothing — stale pruning handles truly gone users after 60s
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
