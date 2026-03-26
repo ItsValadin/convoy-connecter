@@ -1,0 +1,1 @@
+ALTER TABLE public.convoy_members ADD CONSTRAINT convoy_members_convoy_session_unique UNIQUE (convoy_id, session_id);
