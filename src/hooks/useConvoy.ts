@@ -581,6 +581,59 @@ export const useConvoy = (initialCenter: [number, number]) => {
     };
   }, []);
 
+  // Auto-rejoin convoy from saved session on mount
+  useEffect(() => {
+    if (hasAttemptedRejoinRef.current || convoyId) return;
+    hasAttemptedRejoinRef.current = true;
+
+    const saved = loadSession();
+    if (!saved) return;
+
+    const attemptRejoin = async () => {
+      // Check if convoy still exists
+      const { data: convoy, error } = await supabase
+        .from("convoys")
+        .select("id, code")
+        .eq("id", saved.convoyId)
+        .single();
+
+      if (error || !convoy) {
+        clearSession();
+        return;
+      }
+
+      // Re-use the saved session ID
+      sessionIdRef.current = saved.sessionId;
+
+      // Upsert ourselves back into the convoy (we may have been pruned)
+      const pos = latestPositionRef.current;
+      await supabase
+        .from("convoy_members")
+        .upsert({
+          convoy_id: convoy.id,
+          session_id: saved.sessionId,
+          name: saved.name,
+          lat: pos.lat,
+          lng: pos.lng,
+          color: saved.color,
+          is_leader: saved.isLeader,
+          last_seen: new Date().toISOString(),
+        }, { onConflict: "convoy_id,session_id" });
+
+      setConvoyCode(convoy.code);
+      setConvoyId(convoy.id);
+      setIsLeader(saved.isLeader);
+      await fetchMembers(convoy.id);
+      await fetchDestination(convoy.id);
+      subscribeToConvoy(convoy.id);
+      startGpsTracking();
+      startPositionSync(convoy.id);
+      toast.success(`Reconnected to convoy ${convoy.code}!`);
+    };
+
+    attemptRejoin();
+  }, [convoyId, subscribeToConvoy, startGpsTracking, startPositionSync]);
+
   return {
     convoyCode,
     convoyId,
