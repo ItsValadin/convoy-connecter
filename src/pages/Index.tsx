@@ -359,7 +359,6 @@ const Index = () => {
         drivers={drivers}
         convoyCode={convoyCode}
         destination={destination}
-        activeSpeakerId={activeSpeaker?.sessionId ?? null}
         onCreateConvoy={handleCreate}
         onJoinConvoy={handleJoin}
         onLeaveConvoy={handleLeave}
@@ -500,13 +499,13 @@ const Index = () => {
         </div>
       )}
 
-      {/* Active speaker banner */}
+      {/* Active speaker indicator — below convoy panel */}
       {activeSpeaker && convoyCode && (
-        <div className="fixed top-[calc(env(safe-area-inset-top,0px)+2.5rem)] left-0 right-0 z-40 flex justify-center pointer-events-none animate-in fade-in slide-in-from-top duration-300">
-          <div className="bg-card/95 backdrop-blur-xl border border-border rounded-full px-4 py-2 flex items-center gap-2 shadow-lg">
-            <div className="w-3 h-3 rounded-full animate-pulse" style={{ backgroundColor: activeSpeaker.color }} />
-            <span className="font-display text-sm text-foreground font-medium">{activeSpeaker.name}</span>
-            <span className="font-display text-xs text-muted-foreground">speaking...</span>
+        <div className="absolute top-[calc(7rem+env(safe-area-inset-top,0px))] sm:top-20 left-2 sm:left-4 z-10 animate-in fade-in slide-in-from-left duration-300">
+          <div className="bg-card/95 backdrop-blur-xl border border-border rounded-full px-3 py-1.5 flex items-center gap-2 shadow-lg">
+            <div className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: activeSpeaker.color }} />
+            <span className="font-display text-xs text-foreground font-medium">{activeSpeaker.name}</span>
+            <Volume2 className="w-3.5 h-3.5 text-primary animate-pulse" />
           </div>
         </div>
       )}
