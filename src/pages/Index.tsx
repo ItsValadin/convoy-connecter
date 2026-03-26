@@ -472,6 +472,44 @@ const Index = () => {
         </Button>
       </div>
 
+      {/* Walkie-talkie PTT button */}
+      {convoyCode && (
+        <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1">
+          <button
+            onPointerDown={(e) => {
+              e.preventDefault();
+              startRecording();
+            }}
+            onPointerUp={stopRecording}
+            onPointerLeave={stopRecording}
+            className={`w-16 h-16 rounded-full flex items-center justify-center transition-all shadow-lg select-none touch-none ${
+              recording
+                ? "bg-destructive scale-110 shadow-destructive/40"
+                : activeSpeaker
+                  ? "bg-muted opacity-60 cursor-not-allowed"
+                  : "bg-card/90 backdrop-blur-xl border border-border hover:border-primary/50 active:bg-primary/20"
+            }`}
+            title={recording ? "Release to send" : activeSpeaker ? `${activeSpeaker.name} is talking` : "Hold to talk"}
+          >
+            <Mic className={`w-6 h-6 ${recording ? "text-destructive-foreground animate-pulse" : "text-primary"}`} />
+          </button>
+          <span className="font-display text-[10px] text-muted-foreground">
+            {recording ? "Release to send" : activeSpeaker ? `${activeSpeaker.name} speaking...` : "Hold to talk"}
+          </span>
+        </div>
+      )}
+
+      {/* Active speaker banner */}
+      {activeSpeaker && convoyCode && (
+        <div className="fixed top-[calc(env(safe-area-inset-top,0px)+2.5rem)] left-0 right-0 z-40 flex justify-center pointer-events-none animate-in fade-in slide-in-from-top duration-300">
+          <div className="bg-card/95 backdrop-blur-xl border border-border rounded-full px-4 py-2 flex items-center gap-2 shadow-lg">
+            <div className="w-3 h-3 rounded-full animate-pulse" style={{ backgroundColor: activeSpeaker.color }} />
+            <span className="font-display text-sm text-foreground font-medium">{activeSpeaker.name}</span>
+            <span className="font-display text-xs text-muted-foreground">speaking...</span>
+          </div>
+        </div>
+      )}
+
       {/* Bottom status bar */}
       {convoyCode && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 bg-card/90 backdrop-blur-xl border border-border rounded-full px-3 sm:px-5 py-2 sm:py-2.5 flex items-center gap-2 sm:gap-4 max-w-[90vw]">
