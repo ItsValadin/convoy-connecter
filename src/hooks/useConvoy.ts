@@ -27,6 +27,35 @@ const generateCode = () => {
   return Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
 };
 
+const STORAGE_KEY = "convoy-session";
+
+interface SavedSession {
+  convoyId: string;
+  convoyCode: string;
+  sessionId: string;
+  name: string;
+  color: string;
+  isLeader: boolean;
+}
+
+const saveSession = (session: SavedSession) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+};
+
+const clearSession = () => {
+  localStorage.removeItem(STORAGE_KEY);
+};
+
+const loadSession = (): SavedSession | null => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
 const generateSessionId = () => crypto.randomUUID();
 
 export const useConvoy = (initialCenter: [number, number]) => {
@@ -39,7 +68,9 @@ export const useConvoy = (initialCenter: [number, number]) => {
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected">("connected");
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttemptRef = useRef(0);
-  const sessionIdRef = useRef(generateSessionId());
+  const savedSession = loadSession();
+  const sessionIdRef = useRef(savedSession?.sessionId || generateSessionId());
+  const hasAttemptedRejoinRef = useRef(false);
   const watchIdRef = useRef<number | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const positionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -333,6 +364,7 @@ export const useConvoy = (initialCenter: [number, number]) => {
     setConvoyCode(code);
     setConvoyId(convoy.id);
     setIsLeader(true);
+    saveSession({ convoyId: convoy.id, convoyCode: code, sessionId: sessionIdRef.current, name, color: DRIVER_COLORS[colorIdx], isLeader: true });
     await fetchMembers(convoy.id);
     subscribeToConvoy(convoy.id);
     startGpsTracking();
@@ -382,6 +414,7 @@ export const useConvoy = (initialCenter: [number, number]) => {
     setConvoyCode(code.toUpperCase());
     setConvoyId(convoy.id);
     setIsLeader(false);
+    saveSession({ convoyId: convoy.id, convoyCode: code.toUpperCase(), sessionId: sessionIdRef.current, name, color: DRIVER_COLORS[colorIdx], isLeader: false });
     await fetchMembers(convoy.id);
     await fetchDestination(convoy.id);
     subscribeToConvoy(convoy.id);
@@ -456,6 +489,7 @@ export const useConvoy = (initialCenter: [number, number]) => {
       dbIntervalRef.current = null;
     }
 
+    clearSession();
     setConvoyCode(null);
     setConvoyId(null);
     setDrivers([]);
@@ -465,21 +499,12 @@ export const useConvoy = (initialCenter: [number, number]) => {
     toast("You left the convoy");
   }, [convoyId]);
 
-  // beforeunload: delete self from DB when browser/tab actually closes
-  // visibilitychange: on hidden just stop syncing, on visible re-sync (don't delete — user may be switching apps)
+  // beforeunload: broadcast leave but keep DB record so auto-rejoin works on next load
+  // visibilitychange: on hidden do nothing, on visible re-sync
   useEffect(() => {
-    const cleanupOnClose = () => {
+    const handleBeforeUnload = () => {
       if (convoyId) {
-        const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/convoy_members?convoy_id=eq.${convoyId}&session_id=eq.${sessionIdRef.current}`;
-        fetch(url, {
-          method: "DELETE",
-          headers: {
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          keepalive: true,
-        });
-        // Best-effort broadcast leave
+        // Best-effort broadcast leave so others see us go temporarily
         channelRef.current?.send({
           type: "broadcast",
           event: "leave",
@@ -487,8 +512,6 @@ export const useConvoy = (initialCenter: [number, number]) => {
         });
       }
     };
-
-    const handleBeforeUnload = () => cleanupOnClose();
 
     const handleVisibilityChange = () => {
       if (!convoyId) return;
@@ -546,6 +569,59 @@ export const useConvoy = (initialCenter: [number, number]) => {
       }
     };
   }, []);
+
+  // Auto-rejoin convoy from saved session on mount
+  useEffect(() => {
+    if (hasAttemptedRejoinRef.current || convoyId) return;
+    hasAttemptedRejoinRef.current = true;
+
+    const saved = loadSession();
+    if (!saved) return;
+
+    const attemptRejoin = async () => {
+      // Check if convoy still exists
+      const { data: convoy, error } = await supabase
+        .from("convoys")
+        .select("id, code")
+        .eq("id", saved.convoyId)
+        .single();
+
+      if (error || !convoy) {
+        clearSession();
+        return;
+      }
+
+      // Re-use the saved session ID
+      sessionIdRef.current = saved.sessionId;
+
+      // Upsert ourselves back into the convoy (we may have been pruned)
+      const pos = latestPositionRef.current;
+      await supabase
+        .from("convoy_members")
+        .upsert({
+          convoy_id: convoy.id,
+          session_id: saved.sessionId,
+          name: saved.name,
+          lat: pos.lat,
+          lng: pos.lng,
+          color: saved.color,
+          is_leader: saved.isLeader,
+          last_seen: new Date().toISOString(),
+        }, { onConflict: "convoy_id,session_id" });
+
+      setConvoyCode(convoy.code);
+      setConvoyId(convoy.id);
+      setIsLeader(saved.isLeader);
+      await fetchMembers(convoy.id);
+      await fetchDestination(convoy.id);
+      subscribeToConvoy(convoy.id);
+      startGpsTracking();
+      startPositionSync(convoy.id);
+      toast.success(`Reconnected to convoy ${convoy.code}!`);
+    };
+
+    attemptRejoin();
+  }, [convoyId, subscribeToConvoy, startGpsTracking, startPositionSync]);
 
   return {
     convoyCode,
