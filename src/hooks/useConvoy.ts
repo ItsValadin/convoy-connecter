@@ -499,21 +499,12 @@ export const useConvoy = (initialCenter: [number, number]) => {
     toast("You left the convoy");
   }, [convoyId]);
 
-  // beforeunload: delete self from DB when browser/tab actually closes
-  // visibilitychange: on hidden just stop syncing, on visible re-sync (don't delete — user may be switching apps)
+  // beforeunload: broadcast leave but keep DB record so auto-rejoin works on next load
+  // visibilitychange: on hidden do nothing, on visible re-sync
   useEffect(() => {
-    const cleanupOnClose = () => {
+    const handleBeforeUnload = () => {
       if (convoyId) {
-        const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/convoy_members?convoy_id=eq.${convoyId}&session_id=eq.${sessionIdRef.current}`;
-        fetch(url, {
-          method: "DELETE",
-          headers: {
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          keepalive: true,
-        });
-        // Best-effort broadcast leave
+        // Best-effort broadcast leave so others see us go temporarily
         channelRef.current?.send({
           type: "broadcast",
           event: "leave",
@@ -521,8 +512,6 @@ export const useConvoy = (initialCenter: [number, number]) => {
         });
       }
     };
-
-    const handleBeforeUnload = () => cleanupOnClose();
 
     const handleVisibilityChange = () => {
       if (!convoyId) return;
