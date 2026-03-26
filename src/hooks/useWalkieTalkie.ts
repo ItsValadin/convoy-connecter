@@ -17,17 +17,97 @@ interface ActiveSpeaker {
 }
 
 const MAX_RECORD_MS = 15000; // 15s max recording
+const CHUNK_MS = 300;
+const MAX_PLAYBACK_BACKLOG_S = 1.2;
+
+const base64ToUint8Array = (base64: string) => {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+};
+
+const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+};
 
 export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }: WalkieTalkieOptions) => {
   const [recording, setRecording] = useState(false);
   const [activeSpeaker, setActiveSpeaker] = useState<ActiveSpeaker | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const maxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const speakerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const playbackQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const nextPlaybackTimeRef = useRef(0);
+  const sendQueueRef = useRef<Promise<void>>(Promise.resolve());
+
+  const playFallbackAudio = useCallback(async (bytes: Uint8Array, mimeType: string) => {
+    const stableBytes = Uint8Array.from(bytes);
+    const blob = new Blob([stableBytes], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+
+    await new Promise<void>((resolve) => {
+      const audio = new Audio(url);
+      audio.onended = () => resolve();
+      audio.onerror = () => resolve();
+      audio.play().catch(() => resolve());
+    });
+
+    URL.revokeObjectURL(url);
+  }, []);
+
+  const queueIncomingAudio = useCallback((base64: string, mimeType: string) => {
+    playbackQueueRef.current = playbackQueueRef.current
+      .then(async () => {
+        const bytes = base64ToUint8Array(base64);
+        const ctx = audioContextRef.current ?? new AudioContext({ latencyHint: "interactive" });
+        audioContextRef.current = ctx;
+
+        if (ctx.state === "suspended") {
+          try {
+            await ctx.resume();
+          } catch {
+            // Ignore and attempt fallback below
+          }
+        }
+
+        try {
+          const audioBuffer = await ctx.decodeAudioData(bytes.buffer.slice(0));
+          const now = ctx.currentTime;
+
+          if (nextPlaybackTimeRef.current < now) {
+            nextPlaybackTimeRef.current = now + 0.02;
+          }
+
+          // If backlog grows, catch up to near-live audio.
+          if (nextPlaybackTimeRef.current - now > MAX_PLAYBACK_BACKLOG_S) {
+            nextPlaybackTimeRef.current = now + 0.02;
+          }
+
+          const source = ctx.createBufferSource();
+          source.buffer = audioBuffer;
+          source.connect(ctx.destination);
+          source.start(nextPlaybackTimeRef.current);
+          nextPlaybackTimeRef.current += audioBuffer.duration;
+          return;
+        } catch {
+          await playFallbackAudio(bytes, mimeType);
+        }
+      })
+      .catch((e) => {
+        console.error("PTT playback queue error:", e);
+      });
+  }, [playFallbackAudio]);
 
   // Subscribe to walkie-talkie channel
   useEffect(() => {
@@ -46,6 +126,7 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
           name: payload.name,
           color: payload.color,
         });
+        nextPlaybackTimeRef.current = 0;
         // Auto-clear after timeout in case ptt_end is missed
         if (speakerTimerRef.current) clearTimeout(speakerTimerRef.current);
         speakerTimerRef.current = setTimeout(() => setActiveSpeaker(null), MAX_RECORD_MS + 2000);
@@ -53,10 +134,11 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
       .on("broadcast", { event: "ptt_end" }, ({ payload }) => {
         if (payload.session_id === sessionId) return;
         setActiveSpeaker(null);
+        nextPlaybackTimeRef.current = 0;
       })
       .on("broadcast", { event: "ptt_audio" }, ({ payload }) => {
         if (payload.session_id === sessionId) return;
-        playAudioBase64(payload.audio, payload.mimeType);
+        queueIncomingAudio(payload.audio, payload.mimeType);
       })
       .subscribe();
 
@@ -65,41 +147,6 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
       channelRef.current = null;
     };
   }, [convoyId, sessionId]);
-
-  const playAudioBase64 = useCallback((base64: string, mimeType: string) => {
-    try {
-      const binary = atob(base64);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) {
-        bytes[i] = binary.charCodeAt(i);
-      }
-      const arrayBuffer = bytes.buffer;
-
-      // Use AudioContext for broader codec support
-      const ctx = audioContextRef.current ?? new AudioContext();
-      audioContextRef.current = ctx;
-
-      ctx.decodeAudioData(
-        arrayBuffer.slice(0), // slice to get a transferable copy
-        (audioBuffer) => {
-          const source = ctx.createBufferSource();
-          source.buffer = audioBuffer;
-          source.connect(ctx.destination);
-          source.start(0);
-        },
-        () => {
-          // Fallback to Audio element if AudioContext can't decode
-          const blob = new Blob([bytes], { type: mimeType });
-          const url = URL.createObjectURL(blob);
-          const audio = new Audio(url);
-          audio.onended = () => URL.revokeObjectURL(url);
-          audio.play().catch((e) => console.error("Audio playback failed:", e));
-        }
-      );
-    } catch (e) {
-      console.error("Failed to decode audio:", e);
-    }
-  }, []);
 
   const startRecording = useCallback(async () => {
     if (!convoyId || recording) return;
@@ -114,39 +161,63 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
-      // Prefer opus/webm for small size, fallback to whatever is available
+      // Prefer Opus codecs for low-latency speech quality.
       const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
         ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")
+          ? "audio/ogg;codecs=opus"
         : MediaRecorder.isTypeSupported("audio/webm")
           ? "audio/webm"
-          : "audio/mp4";
+          : "";
 
-      const recorder = new MediaRecorder(stream, { mimeType });
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
+
+      const selectedMimeType = recorder.mimeType || mimeType || "audio/webm";
       mediaRecorderRef.current = recorder;
-      chunksRef.current = [];
+      sendQueueRef.current = Promise.resolve();
 
-      recorder.ondataavailable = (e) => {
+      recorder.onstart = () => {
+        // Broadcast start only after recorder is actually running
+        channelRef.current?.send({
+          type: "broadcast",
+          event: "ptt_start",
+          payload: {
+            session_id: sessionId,
+            name: senderName,
+            color: senderColor,
+          },
+        });
+      };
+
+      recorder.ondataavailable = async (e) => {
         if (e.data.size > 0) {
-          // Stream each chunk immediately instead of batching
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            const dataUrl = reader.result as string;
-            const base64 = dataUrl.split(",")[1];
-            if (base64 && channelRef.current) {
-              channelRef.current.send({
+          sendQueueRef.current = sendQueueRef.current
+            .then(async () => {
+              const base64 = arrayBufferToBase64(await e.data.arrayBuffer());
+              if (!base64 || !channelRef.current) return;
+              await channelRef.current.send({
                 type: "broadcast",
                 event: "ptt_audio",
                 payload: {
                   session_id: sessionId,
                   name: senderName,
                   audio: base64,
-                  mimeType,
+                  mimeType: selectedMimeType,
                 },
               });
-            }
-          };
-          reader.readAsDataURL(e.data);
+            })
+            .catch((err) => {
+              console.error("PTT chunk send failed:", err);
+            });
         }
+      };
+
+      recorder.onerror = (event) => {
+        console.error("PTT recorder error:", event);
+        toast.error("Microphone stream interrupted");
+        setRecording(false);
       };
 
       recorder.onstop = () => {
@@ -162,18 +233,7 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
         });
       };
 
-      // Broadcast start
-      channelRef.current?.send({
-        type: "broadcast",
-        event: "ptt_start",
-        payload: {
-          session_id: sessionId,
-          name: senderName,
-          color: senderColor,
-        },
-      });
-
-      recorder.start(500); // collect in 500ms chunks for streaming feel
+      recorder.start(CHUNK_MS);
       setRecording(true);
 
       // Auto-stop after max duration
@@ -194,6 +254,7 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
       maxTimerRef.current = null;
     }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.requestData();
       mediaRecorderRef.current.stop();
     }
     setRecording(false);
@@ -208,6 +269,7 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
       streamRef.current?.getTracks().forEach((t) => t.stop());
       if (maxTimerRef.current) clearTimeout(maxTimerRef.current);
       if (speakerTimerRef.current) clearTimeout(speakerTimerRef.current);
+      audioContextRef.current?.close().catch(() => undefined);
     };
   }, []);
 
