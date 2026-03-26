@@ -55,6 +55,8 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
   const sendQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   const streamAppenderRef = useRef<((chunk: Uint8Array) => void) | null>(null);
+  const queueIncomingAudioRef = useRef<(base64: string, mimeType: string) => void>(() => {});
+  const teardownStreamPlaybackRef = useRef<() => void>(() => {});
   const streamTeardownRef = useRef<(() => void) | null>(null);
   const streamTeardownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const streamMimeTypeRef = useRef<string | null>(null);
@@ -70,6 +72,8 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
     streamTeardownRef.current?.();
     streamTeardownRef.current = null;
   }, []);
+
+  teardownStreamPlaybackRef.current = teardownStreamPlayback;
 
   const setupStreamPlayback = useCallback((mimeType: string) => {
     if (typeof MediaSource === "undefined" || !MediaSource.isTypeSupported(mimeType)) {
@@ -215,6 +219,8 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
       });
   }, [playFallbackAudio, setupStreamPlayback]);
 
+  queueIncomingAudioRef.current = queueIncomingAudio;
+
   const stopRecording = useCallback(() => {
     if (maxTimerRef.current) {
       clearTimeout(maxTimerRef.current);
@@ -236,7 +242,7 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
       return;
     }
 
-    channelRef.current = supabase
+    const channel = supabase
       .channel(`walkie-${convoyId}`)
       .on("broadcast", { event: "ptt_start" }, ({ payload }) => {
         if (payload.session_id === sessionId) return;
@@ -245,7 +251,7 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
           name: payload.name,
           color: payload.color,
         });
-        teardownStreamPlayback();
+        teardownStreamPlaybackRef.current();
         nextPlaybackTimeRef.current = 0;
         // Auto-clear after timeout in case ptt_end is missed
         if (speakerTimerRef.current) clearTimeout(speakerTimerRef.current);
@@ -256,20 +262,22 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
         setActiveSpeaker(null);
         nextPlaybackTimeRef.current = 0;
         if (streamTeardownTimerRef.current) clearTimeout(streamTeardownTimerRef.current);
-        streamTeardownTimerRef.current = setTimeout(() => teardownStreamPlayback(), 1000);
+        streamTeardownTimerRef.current = setTimeout(() => teardownStreamPlaybackRef.current(), 1000);
       })
       .on("broadcast", { event: "ptt_audio" }, ({ payload }) => {
         if (payload.session_id === sessionId) return;
-        queueIncomingAudio(payload.audio, payload.mimeType ?? "audio/webm");
+        queueIncomingAudioRef.current(payload.audio, payload.mimeType ?? "audio/webm");
       })
       .subscribe();
+
+    channelRef.current = channel;
 
     return () => {
       channelRef.current?.unsubscribe();
       channelRef.current = null;
-      teardownStreamPlayback();
+      teardownStreamPlaybackRef.current();
     };
-  }, [convoyId, sessionId, queueIncomingAudio, teardownStreamPlayback]);
+  }, [convoyId, sessionId]);
 
   const startRecording = useCallback(async () => {
     if (!convoyId || recording) return;
