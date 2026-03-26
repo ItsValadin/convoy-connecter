@@ -52,10 +52,8 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
   const sendQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   const playFallbackAudio = useCallback(async (bytes: Uint8Array, mimeType: string) => {
-    const blob = new Blob(
-      [bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)],
-      { type: mimeType }
-    );
+    const stableBytes = Uint8Array.from(bytes);
+    const blob = new Blob([stableBytes], { type: mimeType });
     const url = URL.createObjectURL(blob);
 
     await new Promise<void>((resolve) => {
