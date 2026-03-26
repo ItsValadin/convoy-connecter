@@ -10,8 +10,9 @@ import NavigationPanel, { type RouteInfo } from "@/components/NavigationPanel";
 import { useNavigationAlerts, haversineDistance } from "@/hooks/useNavigationAlerts";
 import { useHazards, type HazardType, getHazardLabel } from "@/hooks/useHazards";
 import { useProximityAlerts } from "@/hooks/useProximityAlerts";
+import { useWalkieTalkie } from "@/hooks/useWalkieTalkie";
 import { toast } from "sonner";
-import { Crosshair, Volume2, VolumeX, Navigation, Clock, Gauge, Download, X, Sun, Moon, RotateCw, AlertTriangle } from "lucide-react";
+import { Crosshair, Volume2, VolumeX, Navigation, Clock, Gauge, Download, X, Sun, Moon, RotateCw, AlertTriangle, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConvoy } from "@/hooks/useConvoy";
 import { fetchRoute, type RouteGeometry } from "@/lib/routing";
@@ -65,6 +66,14 @@ const Index = () => {
   const { hazards, addHazard, removeHazard } = useHazards(convoyId);
   const [showHazardPicker, setShowHazardPicker] = useState(false);
   useProximityAlerts(drivers, sessionId, !!convoyCode);
+
+  const selfDriver = drivers.find((d) => d.id === sessionId);
+  const { recording, activeSpeaker, startRecording, stopRecording } = useWalkieTalkie({
+    convoyId,
+    sessionId,
+    senderName: selfDriver?.name ?? "Unknown",
+    senderColor: selfDriver?.color ?? "#22c55e",
+  });
 
   const HAZARD_TYPES: { type: HazardType; emoji: string; label: string }[] = [
     { type: "warning", emoji: "⚠️", label: "Warning" },
@@ -462,6 +471,44 @@ const Index = () => {
           <Crosshair className={`w-5 h-5 ${followMode ? "text-primary animate-pulse" : "text-primary"}`} />
         </Button>
       </div>
+
+      {/* Walkie-talkie PTT button */}
+      {convoyCode && (
+        <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1">
+          <button
+            onPointerDown={(e) => {
+              e.preventDefault();
+              startRecording();
+            }}
+            onPointerUp={stopRecording}
+            onPointerLeave={stopRecording}
+            className={`w-16 h-16 rounded-full flex items-center justify-center transition-all shadow-lg select-none touch-none ${
+              recording
+                ? "bg-destructive scale-110 shadow-destructive/40"
+                : activeSpeaker
+                  ? "bg-muted opacity-60 cursor-not-allowed"
+                  : "bg-card/90 backdrop-blur-xl border border-border hover:border-primary/50 active:bg-primary/20"
+            }`}
+            title={recording ? "Release to send" : activeSpeaker ? `${activeSpeaker.name} is talking` : "Hold to talk"}
+          >
+            <Mic className={`w-6 h-6 ${recording ? "text-destructive-foreground animate-pulse" : "text-primary"}`} />
+          </button>
+          <span className="font-display text-[10px] text-muted-foreground">
+            {recording ? "Release to send" : activeSpeaker ? `${activeSpeaker.name} speaking...` : "Hold to talk"}
+          </span>
+        </div>
+      )}
+
+      {/* Active speaker banner */}
+      {activeSpeaker && convoyCode && (
+        <div className="fixed top-[calc(env(safe-area-inset-top,0px)+2.5rem)] left-0 right-0 z-40 flex justify-center pointer-events-none animate-in fade-in slide-in-from-top duration-300">
+          <div className="bg-card/95 backdrop-blur-xl border border-border rounded-full px-4 py-2 flex items-center gap-2 shadow-lg">
+            <div className="w-3 h-3 rounded-full animate-pulse" style={{ backgroundColor: activeSpeaker.color }} />
+            <span className="font-display text-sm text-foreground font-medium">{activeSpeaker.name}</span>
+            <span className="font-display text-xs text-muted-foreground">speaking...</span>
+          </div>
+        </div>
+      )}
 
       {/* Bottom status bar */}
       {convoyCode && (
