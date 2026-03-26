@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Volume2 } from "lucide-react";
 import { Users, Copy, Plus, LogIn, Navigation, Crown, Circle, LogOut, ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +24,6 @@ interface ConvoyPanelProps {
   drivers: Driver[];
   convoyCode: string | null;
   destination?: Destination | null;
-  activeSpeakerId?: string | null;
   onCreateConvoy: (name: string) => void;
   onJoinConvoy: (code: string, name: string) => void;
   onLeaveConvoy?: () => void;
@@ -46,7 +44,7 @@ const formatDistance = (km: number): string => {
   return `${km.toFixed(1)} km`;
 };
 
-const ConvoyPanel = ({ drivers, convoyCode, destination, activeSpeakerId, onCreateConvoy, onJoinConvoy, onLeaveConvoy, onDriverClick }: ConvoyPanelProps) => {
+const ConvoyPanel = ({ drivers, convoyCode, destination, onCreateConvoy, onJoinConvoy, onLeaveConvoy, onDriverClick }: ConvoyPanelProps) => {
   const [name, setName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [mode, setMode] = useState<"idle" | "create" | "join">("idle");
@@ -144,12 +142,7 @@ const ConvoyPanel = ({ drivers, convoyCode, destination, activeSpeakerId, onCrea
                         className="w-3 h-3 rounded-full pulse-marker"
                         style={{ backgroundColor: driver.color }}
                       />
-                      <span className="font-display text-sm text-foreground flex-1 flex items-center gap-1.5">
-                        {driver.name}
-                        {activeSpeakerId === driver.id && (
-                          <Volume2 className="w-3.5 h-3.5 text-primary animate-pulse" />
-                        )}
-                      </span>
+                      <span className="font-display text-sm text-foreground flex-1">{driver.name}</span>
                       <div className="flex items-center gap-2 shrink-0">
                         {distToDest && (
                           <span className="font-display text-[10px] text-primary flex items-center gap-0.5" title="Distance to destination">
