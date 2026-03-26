@@ -64,6 +64,7 @@ const Index = () => {
 
   const { hazards, addHazard, removeHazard } = useHazards(convoyId);
   const [showHazardPicker, setShowHazardPicker] = useState(false);
+  useProximityAlerts(drivers, sessionId, !!convoyCode);
 
   const HAZARD_TYPES: { type: HazardType; emoji: string; label: string }[] = [
     { type: "warning", emoji: "⚠️", label: "Warning" },
