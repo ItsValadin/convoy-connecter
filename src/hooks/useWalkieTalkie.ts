@@ -126,39 +126,33 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
       chunksRef.current = [];
 
       recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
+        if (e.data.size > 0) {
+          // Stream each chunk immediately instead of batching
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const dataUrl = reader.result as string;
+            const base64 = dataUrl.split(",")[1];
+            if (base64 && channelRef.current) {
+              channelRef.current.send({
+                type: "broadcast",
+                event: "ptt_audio",
+                payload: {
+                  session_id: sessionId,
+                  name: senderName,
+                  audio: base64,
+                  mimeType,
+                },
+              });
+            }
+          };
+          reader.readAsDataURL(e.data);
+        }
       };
 
-      recorder.onstop = async () => {
+      recorder.onstop = () => {
         // Stop all tracks
         stream.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
-
-        if (chunksRef.current.length === 0) return;
-
-        const blob = new Blob(chunksRef.current, { type: mimeType });
-        chunksRef.current = [];
-
-        // Convert to base64 and broadcast
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const dataUrl = reader.result as string;
-          // Strip the data:xxx;base64, prefix
-          const base64 = dataUrl.split(",")[1];
-          if (base64 && channelRef.current) {
-            channelRef.current.send({
-              type: "broadcast",
-              event: "ptt_audio",
-              payload: {
-                session_id: sessionId,
-                name: senderName,
-                audio: base64,
-                mimeType,
-              },
-            });
-          }
-        };
-        reader.readAsDataURL(blob);
 
         // Broadcast end
         channelRef.current?.send({
