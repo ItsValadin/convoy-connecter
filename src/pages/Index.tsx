@@ -478,10 +478,17 @@ const Index = () => {
           <button
             onPointerDown={(e) => {
               e.preventDefault();
+              e.currentTarget.setPointerCapture?.(e.pointerId);
               startRecording();
             }}
-            onPointerUp={stopRecording}
-            onPointerLeave={stopRecording}
+            onPointerUp={(e) => {
+              if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+                e.currentTarget.releasePointerCapture(e.pointerId);
+              }
+              stopRecording();
+            }}
+            onPointerCancel={stopRecording}
+            onLostPointerCapture={stopRecording}
             className={`w-16 h-16 rounded-full flex items-center justify-center transition-all shadow-lg select-none touch-none ${
               recording
                 ? "bg-destructive scale-110 shadow-destructive/40"
