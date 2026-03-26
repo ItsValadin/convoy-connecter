@@ -29,6 +29,17 @@ interface Destination {
   label?: string | null;
 }
 
+interface HazardPin {
+  id: string;
+  lat: number;
+  lng: number;
+  hazardType: string;
+  reporterName: string;
+  reporterColor: string;
+  note: string | null;
+  createdAt: string;
+}
+
 type MapTheme = "dark" | "light";
 
 interface ConvoyMapProps {
@@ -36,10 +47,12 @@ interface ConvoyMapProps {
   center: [number, number];
   destination?: Destination | null;
   routeCoordinates?: [number, number][] | null;
+  hazards?: HazardPin[];
   isLeader?: boolean;
   mapTheme?: MapTheme;
   onMapReady?: (map: L.Map) => void;
   onMapClick?: (lat: number, lng: number) => void;
+  onHazardClick?: (hazardId: string) => void;
 }
 
 const createDriverIcon = (color: string, isLeader: boolean, speed?: number | null, heading?: number | null) => {
@@ -91,6 +104,34 @@ const createDestinationIcon = () => {
   });
 };
 
+const HAZARD_ICONS: Record<string, string> = {
+  warning: "⚠️",
+  accident: "🚗",
+  police: "🚔",
+  road_closed: "🚧",
+  debris: "🪨",
+};
+
+const createHazardIcon = (hazardType: string) => {
+  const emoji = HAZARD_ICONS[hazardType] || "⚠️";
+  const svg = `<div style="
+    width: 36px; height: 36px;
+    background: hsl(0 0% 10% / 0.9);
+    border: 2px solid hsl(45 100% 60%);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; line-height: 1;
+    box-shadow: 0 0 12px hsl(45 100% 50% / 0.4);
+    animation: hazard-pulse 2s ease-in-out infinite;
+  ">${emoji}</div>`;
+  return L.divIcon({
+    html: svg,
+    className: "convoy-marker",
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+  });
+};
+
 const LERP_DURATION = 1000; // 1 second interpolation
 
 const TILE_URLS: Record<MapTheme, string> = {
@@ -98,7 +139,7 @@ const TILE_URLS: Record<MapTheme, string> = {
   light: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
 };
 
-const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, mapTheme = "dark", onMapReady, onMapClick }: ConvoyMapProps) => {
+const ConvoyMap = ({ drivers, center, destination, routeCoordinates, hazards = [], isLeader, mapTheme = "dark", onMapReady, onMapClick, onHazardClick }: ConvoyMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const animationsRef = useRef<Map<string, AnimationState>>(new Map());
@@ -106,6 +147,9 @@ const ConvoyMap = ({ drivers, center, destination, routeCoordinates, isLeader, m
   const polylineRef = useRef<L.Polyline | null>(null);
   const routePolylineRef = useRef<L.Polyline | null>(null);
   const destinationMarkerRef = useRef<L.Marker | null>(null);
+  const hazardMarkersRef = useRef<Map<string, L.Marker>>(new Map());
+  const onHazardClickRef = useRef(onHazardClick);
+  onHazardClickRef.current = onHazardClick;
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const onMapClickRef = useRef(onMapClick);
   onMapClickRef.current = onMapClick;
