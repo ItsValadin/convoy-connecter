@@ -17,7 +17,7 @@ interface ActiveSpeaker {
 }
 
 const MAX_RECORD_MS = 15000; // 15s max recording
-const CHUNK_MS = 300;
+const CHUNK_MS = 500;
 const MAX_PLAYBACK_BACKLOG_S = 1.2;
 
 const base64ToUint8Array = (base64: string) => {
@@ -38,6 +38,9 @@ const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
   return btoa(binary);
 };
 
+const uint8ToArrayBuffer = (bytes: Uint8Array) =>
+  bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+
 export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }: WalkieTalkieOptions) => {
   const [recording, setRecording] = useState(false);
   const [activeSpeaker, setActiveSpeaker] = useState<ActiveSpeaker | null>(null);
@@ -50,6 +53,99 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
   const playbackQueueRef = useRef<Promise<void>>(Promise.resolve());
   const nextPlaybackTimeRef = useRef(0);
   const sendQueueRef = useRef<Promise<void>>(Promise.resolve());
+
+  const streamAppenderRef = useRef<((chunk: Uint8Array) => void) | null>(null);
+  const streamTeardownRef = useRef<(() => void) | null>(null);
+  const streamTeardownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const streamMimeTypeRef = useRef<string | null>(null);
+
+  const teardownStreamPlayback = useCallback(() => {
+    if (streamTeardownTimerRef.current) {
+      clearTimeout(streamTeardownTimerRef.current);
+      streamTeardownTimerRef.current = null;
+    }
+
+    streamAppenderRef.current = null;
+    streamMimeTypeRef.current = null;
+    streamTeardownRef.current?.();
+    streamTeardownRef.current = null;
+  }, []);
+
+  const setupStreamPlayback = useCallback((mimeType: string) => {
+    if (typeof MediaSource === "undefined" || !MediaSource.isTypeSupported(mimeType)) {
+      return false;
+    }
+
+    if (streamMimeTypeRef.current === mimeType && streamAppenderRef.current) {
+      return true;
+    }
+
+    teardownStreamPlayback();
+
+    const mediaSource = new MediaSource();
+    const audio = new Audio();
+    const objectUrl = URL.createObjectURL(mediaSource);
+    audio.src = objectUrl;
+    audio.autoplay = true;
+    audio.preload = "auto";
+
+    let sourceBuffer: SourceBuffer | null = null;
+    let disposed = false;
+    const queue: ArrayBuffer[] = [];
+
+    const flush = () => {
+      if (disposed || !sourceBuffer || sourceBuffer.updating || queue.length === 0) return;
+      try {
+        sourceBuffer.appendBuffer(queue.shift()!);
+      } catch (error) {
+        console.error("PTT stream append failed:", error);
+      }
+    };
+
+    const onUpdateEnd = () => flush();
+
+    const onSourceOpen = () => {
+      if (disposed || mediaSource.readyState !== "open") return;
+      try {
+        sourceBuffer = mediaSource.addSourceBuffer(mimeType);
+        sourceBuffer.mode = "sequence";
+        sourceBuffer.addEventListener("updateend", onUpdateEnd);
+        flush();
+      } catch (error) {
+        console.error("PTT source buffer setup failed:", error);
+        teardownStreamPlayback();
+      }
+    };
+
+    mediaSource.addEventListener("sourceopen", onSourceOpen, { once: true });
+    audio.play().catch(() => undefined);
+
+    streamMimeTypeRef.current = mimeType;
+    streamAppenderRef.current = (chunk: Uint8Array) => {
+      if (disposed) return;
+      queue.push(uint8ToArrayBuffer(chunk));
+      flush();
+    };
+
+    streamTeardownRef.current = () => {
+      if (disposed) return;
+      disposed = true;
+      sourceBuffer?.removeEventListener("updateend", onUpdateEnd);
+      try {
+        if (mediaSource.readyState === "open" && sourceBuffer && !sourceBuffer.updating) {
+          mediaSource.endOfStream();
+        }
+      } catch {
+        // Ignore stream close errors
+      }
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+      URL.revokeObjectURL(objectUrl);
+    };
+
+    return true;
+  }, [teardownStreamPlayback]);
 
   const playFallbackAudio = useCallback(async (bytes: Uint8Array, mimeType: string) => {
     const stableBytes = Uint8Array.from(bytes);
@@ -67,9 +163,19 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
   }, []);
 
   const queueIncomingAudio = useCallback((base64: string, mimeType: string) => {
+    const bytes = base64ToUint8Array(base64);
+
+    if (setupStreamPlayback(mimeType) && streamAppenderRef.current) {
+      if (streamTeardownTimerRef.current) {
+        clearTimeout(streamTeardownTimerRef.current);
+        streamTeardownTimerRef.current = null;
+      }
+      streamAppenderRef.current(bytes);
+      return;
+    }
+
     playbackQueueRef.current = playbackQueueRef.current
       .then(async () => {
-        const bytes = base64ToUint8Array(base64);
         const ctx = audioContextRef.current ?? new AudioContext({ latencyHint: "interactive" });
         audioContextRef.current = ctx;
 
@@ -82,7 +188,7 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
         }
 
         try {
-          const audioBuffer = await ctx.decodeAudioData(bytes.buffer.slice(0));
+          const audioBuffer = await ctx.decodeAudioData(uint8ToArrayBuffer(bytes));
           const now = ctx.currentTime;
 
           if (nextPlaybackTimeRef.current < now) {
@@ -107,13 +213,26 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
       .catch((e) => {
         console.error("PTT playback queue error:", e);
       });
-  }, [playFallbackAudio]);
+  }, [playFallbackAudio, setupStreamPlayback]);
+
+  const stopRecording = useCallback(() => {
+    if (maxTimerRef.current) {
+      clearTimeout(maxTimerRef.current);
+      maxTimerRef.current = null;
+    }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.requestData();
+      mediaRecorderRef.current.stop();
+    }
+    setRecording(false);
+  }, []);
 
   // Subscribe to walkie-talkie channel
   useEffect(() => {
     if (!convoyId) {
       channelRef.current?.unsubscribe();
       channelRef.current = null;
+      teardownStreamPlayback();
       return;
     }
 
@@ -126,6 +245,7 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
           name: payload.name,
           color: payload.color,
         });
+        teardownStreamPlayback();
         nextPlaybackTimeRef.current = 0;
         // Auto-clear after timeout in case ptt_end is missed
         if (speakerTimerRef.current) clearTimeout(speakerTimerRef.current);
@@ -135,18 +255,21 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
         if (payload.session_id === sessionId) return;
         setActiveSpeaker(null);
         nextPlaybackTimeRef.current = 0;
+        if (streamTeardownTimerRef.current) clearTimeout(streamTeardownTimerRef.current);
+        streamTeardownTimerRef.current = setTimeout(() => teardownStreamPlayback(), 1000);
       })
       .on("broadcast", { event: "ptt_audio" }, ({ payload }) => {
         if (payload.session_id === sessionId) return;
-        queueIncomingAudio(payload.audio, payload.mimeType);
+        queueIncomingAudio(payload.audio, payload.mimeType ?? "audio/webm");
       })
       .subscribe();
 
     return () => {
       channelRef.current?.unsubscribe();
       channelRef.current = null;
+      teardownStreamPlayback();
     };
-  }, [convoyId, sessionId]);
+  }, [convoyId, sessionId, queueIncomingAudio, teardownStreamPlayback]);
 
   const startRecording = useCallback(async () => {
     if (!convoyId || recording) return;
@@ -162,19 +285,21 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
       streamRef.current = stream;
 
       // Prefer Opus codecs for low-latency speech quality.
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")
-          ? "audio/ogg;codecs=opus"
-        : MediaRecorder.isTypeSupported("audio/webm")
-          ? "audio/webm"
-          : "";
+      const mimeType = MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")
+        ? "audio/ogg;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+          ? "audio/webm;codecs=opus"
+          : MediaRecorder.isTypeSupported("audio/mp4")
+            ? "audio/mp4"
+            : MediaRecorder.isTypeSupported("audio/webm")
+              ? "audio/webm"
+              : "";
 
       const recorder = mimeType
         ? new MediaRecorder(stream, { mimeType })
         : new MediaRecorder(stream);
 
-      const selectedMimeType = recorder.mimeType || mimeType || "audio/webm";
+      const selectedMimeType = recorder.mimeType || mimeType || "audio/ogg";
       mediaRecorderRef.current = recorder;
       sendQueueRef.current = Promise.resolve();
 
@@ -246,19 +371,7 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
       }
       console.error("Mic error:", e);
     }
-  }, [convoyId, recording, activeSpeaker, sessionId, senderName, senderColor]);
-
-  const stopRecording = useCallback(() => {
-    if (maxTimerRef.current) {
-      clearTimeout(maxTimerRef.current);
-      maxTimerRef.current = null;
-    }
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.requestData();
-      mediaRecorderRef.current.stop();
-    }
-    setRecording(false);
-  }, []);
+  }, [convoyId, recording, activeSpeaker, sessionId, senderName, senderColor, stopRecording]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -269,9 +382,11 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
       streamRef.current?.getTracks().forEach((t) => t.stop());
       if (maxTimerRef.current) clearTimeout(maxTimerRef.current);
       if (speakerTimerRef.current) clearTimeout(speakerTimerRef.current);
+      if (streamTeardownTimerRef.current) clearTimeout(streamTeardownTimerRef.current);
+      teardownStreamPlayback();
       audioContextRef.current?.close().catch(() => undefined);
     };
-  }, []);
+  }, [teardownStreamPlayback]);
 
   return {
     recording,
