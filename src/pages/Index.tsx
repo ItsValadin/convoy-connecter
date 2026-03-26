@@ -10,9 +10,9 @@ import NavigationPanel, { type RouteInfo } from "@/components/NavigationPanel";
 import { useNavigationAlerts, haversineDistance } from "@/hooks/useNavigationAlerts";
 import { useHazards, type HazardType, getHazardLabel } from "@/hooks/useHazards";
 import { useProximityAlerts } from "@/hooks/useProximityAlerts";
-import { useWalkieTalkie } from "@/hooks/useWalkieTalkie";
+
 import { toast } from "sonner";
-import { Crosshair, Volume2, VolumeX, Navigation, Clock, Gauge, Download, X, Sun, Moon, RotateCw, AlertTriangle, Mic } from "lucide-react";
+import { Crosshair, Volume2, VolumeX, Navigation, Clock, Gauge, Download, X, Sun, Moon, RotateCw, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConvoy } from "@/hooks/useConvoy";
 import { fetchRoute, type RouteGeometry } from "@/lib/routing";
@@ -67,13 +67,6 @@ const Index = () => {
   const [showHazardPicker, setShowHazardPicker] = useState(false);
   useProximityAlerts(drivers, sessionId, !!convoyCode);
 
-  const selfDriver = drivers.find((d) => d.id === sessionId);
-  const { recording, activeSpeaker, startRecording, stopRecording } = useWalkieTalkie({
-    convoyId,
-    sessionId,
-    senderName: selfDriver?.name ?? "Unknown",
-    senderColor: selfDriver?.color ?? "#22c55e",
-  });
 
   const HAZARD_TYPES: { type: HazardType; emoji: string; label: string }[] = [
     { type: "warning", emoji: "⚠️", label: "Warning" },
@@ -472,50 +465,6 @@ const Index = () => {
         </Button>
       </div>
 
-      {/* Walkie-talkie PTT button */}
-      {convoyCode && (
-        <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1">
-          <button
-            onPointerDown={(e) => {
-              e.preventDefault();
-              e.currentTarget.setPointerCapture?.(e.pointerId);
-              startRecording();
-            }}
-            onPointerUp={(e) => {
-              if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
-                e.currentTarget.releasePointerCapture(e.pointerId);
-              }
-              stopRecording();
-            }}
-            onPointerCancel={stopRecording}
-            onLostPointerCapture={stopRecording}
-            className={`w-16 h-16 rounded-full flex items-center justify-center transition-all shadow-lg select-none touch-none ${
-              recording
-                ? "bg-destructive scale-110 shadow-destructive/40"
-                : activeSpeaker
-                  ? "bg-muted opacity-60 cursor-not-allowed"
-                  : "bg-card/90 backdrop-blur-xl border border-border hover:border-primary/50 active:bg-primary/20"
-            }`}
-            title={recording ? "Release to send" : activeSpeaker ? `${activeSpeaker.name} is talking` : "Hold to talk"}
-          >
-            <Mic className={`w-6 h-6 ${recording ? "text-destructive-foreground animate-pulse" : "text-primary"}`} />
-          </button>
-          <span className="font-display text-[10px] text-muted-foreground">
-            {recording ? "Release to send" : activeSpeaker ? `${activeSpeaker.name} speaking...` : "Hold to talk"}
-          </span>
-        </div>
-      )}
-
-      {/* Active speaker indicator — below convoy panel */}
-      {activeSpeaker && convoyCode && (
-        <div className="absolute top-[calc(20rem+env(safe-area-inset-top,0px))] sm:top-80 left-2 sm:left-4 z-10 animate-in fade-in slide-in-from-left duration-300">
-          <div className="bg-card/95 backdrop-blur-xl border border-border rounded-full px-3 py-1.5 flex items-center gap-2 shadow-lg">
-            <div className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: activeSpeaker.color }} />
-            <span className="font-display text-xs text-foreground font-medium">{activeSpeaker.name}</span>
-            <Volume2 className="w-3.5 h-3.5 text-primary animate-pulse" />
-          </div>
-        </div>
-      )}
 
       {/* Bottom status bar */}
       {convoyCode && (
