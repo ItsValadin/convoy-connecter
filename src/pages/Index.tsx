@@ -9,6 +9,7 @@ import ConvoyPanel from "@/components/ConvoyPanel";
 import NavigationPanel, { type RouteInfo } from "@/components/NavigationPanel";
 import { useNavigationAlerts, haversineDistance } from "@/hooks/useNavigationAlerts";
 import { useHazards, type HazardType, getHazardLabel } from "@/hooks/useHazards";
+import { useProximityAlerts } from "@/hooks/useProximityAlerts";
 import { toast } from "sonner";
 import { Crosshair, Volume2, VolumeX, Navigation, Clock, Gauge, Download, X, Sun, Moon, RotateCw, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
