@@ -73,11 +73,29 @@ export const useWalkieTalkie = ({ convoyId, sessionId, senderName, senderColor }
       for (let i = 0; i < binary.length; i++) {
         bytes[i] = binary.charCodeAt(i);
       }
-      const blob = new Blob([bytes], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audio.onended = () => URL.revokeObjectURL(url);
-      audio.play().catch((e) => console.error("Audio playback failed:", e));
+      const arrayBuffer = bytes.buffer;
+
+      // Use AudioContext for broader codec support
+      const ctx = audioContextRef.current ?? new AudioContext();
+      audioContextRef.current = ctx;
+
+      ctx.decodeAudioData(
+        arrayBuffer.slice(0), // slice to get a transferable copy
+        (audioBuffer) => {
+          const source = ctx.createBufferSource();
+          source.buffer = audioBuffer;
+          source.connect(ctx.destination);
+          source.start(0);
+        },
+        () => {
+          // Fallback to Audio element if AudioContext can't decode
+          const blob = new Blob([bytes], { type: mimeType });
+          const url = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+          audio.onended = () => URL.revokeObjectURL(url);
+          audio.play().catch((e) => console.error("Audio playback failed:", e));
+        }
+      );
     } catch (e) {
       console.error("Failed to decode audio:", e);
     }
