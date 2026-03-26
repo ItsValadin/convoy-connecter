@@ -27,6 +27,35 @@ const generateCode = () => {
   return Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
 };
 
+const STORAGE_KEY = "convoy-session";
+
+interface SavedSession {
+  convoyId: string;
+  convoyCode: string;
+  sessionId: string;
+  name: string;
+  color: string;
+  isLeader: boolean;
+}
+
+const saveSession = (session: SavedSession) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+};
+
+const clearSession = () => {
+  localStorage.removeItem(STORAGE_KEY);
+};
+
+const loadSession = (): SavedSession | null => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
 const generateSessionId = () => crypto.randomUUID();
 
 export const useConvoy = (initialCenter: [number, number]) => {
@@ -39,7 +68,9 @@ export const useConvoy = (initialCenter: [number, number]) => {
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected">("connected");
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttemptRef = useRef(0);
-  const sessionIdRef = useRef(generateSessionId());
+  const savedSession = loadSession();
+  const sessionIdRef = useRef(savedSession?.sessionId || generateSessionId());
+  const hasAttemptedRejoinRef = useRef(false);
   const watchIdRef = useRef<number | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const positionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
