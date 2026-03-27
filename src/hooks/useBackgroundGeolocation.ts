@@ -80,9 +80,6 @@ export const useBackgroundGeolocation = () => {
             debug: false,
             logLevel: 2, // WARNING
           },
-          http: {
-            autoSync: false,
-          },
         });
 
         // Start tracking
