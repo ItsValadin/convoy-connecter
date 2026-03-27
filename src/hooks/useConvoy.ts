@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { RealtimeChannel } from "@supabase/supabase-js";
+import { useBackgroundGeolocation } from "@/hooks/useBackgroundGeolocation";
 
 export interface Driver {
   id: string;
