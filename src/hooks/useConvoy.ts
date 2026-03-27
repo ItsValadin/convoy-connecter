@@ -72,7 +72,7 @@ export const useConvoy = (initialCenter: [number, number]) => {
   const savedSession = loadSession();
   const sessionIdRef = useRef(savedSession?.sessionId || generateSessionId());
   const hasAttemptedRejoinRef = useRef(false);
-  const watchIdRef = useRef<number | null>(null);
+  const bgGeo = useBackgroundGeolocation();
   const channelRef = useRef<RealtimeChannel | null>(null);
   const positionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const dbIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
