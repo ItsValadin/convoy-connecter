@@ -1,9 +1,20 @@
 import { useEffect, useRef } from "react";
+import { Capacitor } from "@capacitor/core";
+import { KeepAwake } from "@capacitor-community/keep-awake";
 
 export function useWakeLock() {
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
   useEffect(() => {
+    // Native: use KeepAwake plugin (works reliably on iOS/Android)
+    if (Capacitor.isNativePlatform()) {
+      KeepAwake.keepAwake().catch(() => {});
+      return () => {
+        KeepAwake.allowSleep().catch(() => {});
+      };
+    }
+
+    // Web fallback: use Wake Lock API
     if (!("wakeLock" in navigator)) return;
 
     const request = async () => {
@@ -16,7 +27,6 @@ export function useWakeLock() {
 
     request();
 
-    // Re-acquire on visibility change (wake lock releases when tab is hidden)
     const onVisibilityChange = () => {
       if (document.visibilityState === "visible") {
         request();
