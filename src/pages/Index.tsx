@@ -71,13 +71,24 @@ const Index = () => {
   const handleMapReady = useCallback((map: L.Map) => { mapInstanceRef.current = map; }, []);
   const stableOnMapClick = useMemo(() => isLeader ? handleSetDestination : undefined, [isLeader, handleSetDestination]);
   const handleHazardClick = useCallback((id: string) => {
-    const selfDriver = drivers.find((d) => d.id === sessionId);
     const hazard = hazards.find((h) => h.id === id);
-    if (hazard && selfDriver && hazard.sessionId === sessionId) {
-      removeHazard(id);
-      toast("Hazard removed");
-    }
-  }, [drivers, sessionId, hazards, removeHazard]);
+    if (!hazard) return;
+    const isOwn = hazard.sessionId === sessionId;
+    const label = getHazardLabel(hazard.hazardType);
+    const msg = isOwn
+      ? `Remove your ${label} hazard?`
+      : `Remove ${hazard.reporterName}'s ${label} hazard?`;
+    toast(msg, {
+      action: {
+        label: "Remove",
+        onClick: () => {
+          removeHazard(id);
+          toast.success("Hazard removed");
+        },
+      },
+      duration: 5000,
+    });
+  }, [sessionId, hazards, removeHazard]);
   const mappedHazards = useMemo(() => hazards.map((h) => ({
     id: h.id,
     lat: h.lat,
