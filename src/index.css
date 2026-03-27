@@ -110,3 +110,8 @@
 .map-tiles-lighter {
   filter: brightness(1.6) contrast(0.9);
 }
+
+/* Promote map to own compositor layer for smoother panning */
+.leaflet-container {
+  will-change: transform;
+}

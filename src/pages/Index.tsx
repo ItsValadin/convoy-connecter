@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import L from "leaflet";
 import ConvoyMap from "@/components/ConvoyMap";
 import ConvoyChat from "@/components/ConvoyChat";
@@ -66,6 +66,28 @@ const Index = () => {
   const { hazards, addHazard, removeHazard } = useHazards(convoyId);
   const [showHazardPicker, setShowHazardPicker] = useState(false);
   useProximityAlerts(drivers, sessionId, !!convoyCode);
+
+  // Stabilized callbacks and memoized data for ConvoyMap
+  const handleMapReady = useCallback((map: L.Map) => { mapInstanceRef.current = map; }, []);
+  const stableOnMapClick = useMemo(() => isLeader ? handleSetDestination : undefined, [isLeader, handleSetDestination]);
+  const handleHazardClick = useCallback((id: string) => {
+    const selfDriver = drivers.find((d) => d.id === sessionId);
+    const hazard = hazards.find((h) => h.id === id);
+    if (hazard && selfDriver && hazard.sessionId === sessionId) {
+      removeHazard(id);
+      toast("Hazard removed");
+    }
+  }, [drivers, sessionId, hazards, removeHazard]);
+  const mappedHazards = useMemo(() => hazards.map((h) => ({
+    id: h.id,
+    lat: h.lat,
+    lng: h.lng,
+    hazardType: h.hazardType,
+    reporterName: h.reporterName,
+    reporterColor: h.reporterColor,
+    note: h.note,
+    createdAt: h.createdAt,
+  })), [hazards]);
 
 
   const HAZARD_TYPES: { type: HazardType; emoji: string; label: string }[] = [
@@ -315,28 +337,12 @@ const Index = () => {
         center={center}
         destination={destination}
         routeCoordinates={routeCoordinates}
-        hazards={hazards.map((h) => ({
-          id: h.id,
-          lat: h.lat,
-          lng: h.lng,
-          hazardType: h.hazardType,
-          reporterName: h.reporterName,
-          reporterColor: h.reporterColor,
-          note: h.note,
-          createdAt: h.createdAt,
-        }))}
+        hazards={mappedHazards}
         isLeader={isLeader}
         mapTheme={mapTheme}
-        onMapReady={(map) => { mapInstanceRef.current = map; }}
-        onMapClick={isLeader ? handleSetDestination : undefined}
-        onHazardClick={(id) => {
-          const self = drivers.find((d) => d.id === sessionId);
-          const hazard = hazards.find((h) => h.id === id);
-          if (hazard && self && hazard.sessionId === sessionId) {
-            removeHazard(id);
-            toast("Hazard removed");
-          }
-        }}
+        onMapReady={handleMapReady}
+        onMapClick={stableOnMapClick}
+        onHazardClick={handleHazardClick}
       />
       {convoyCode && (
         <OffscreenIndicators

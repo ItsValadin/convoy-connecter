@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import React, { useEffect, useRef, useCallback } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -139,7 +139,7 @@ const TILE_URLS: Record<MapTheme, string> = {
   light: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
 };
 
-const ConvoyMap = ({ drivers, center, destination, routeCoordinates, hazards = [], isLeader, mapTheme = "dark", onMapReady, onMapClick, onHazardClick }: ConvoyMapProps) => {
+const ConvoyMap = React.memo(({ drivers, center, destination, routeCoordinates, hazards = [], isLeader, mapTheme = "dark", onMapReady, onMapClick, onHazardClick }: ConvoyMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const animationsRef = useRef<Map<string, AnimationState>>(new Map());
@@ -363,7 +363,7 @@ const ConvoyMap = ({ drivers, center, destination, routeCoordinates, hazards = [
   return (
     <>
       <style>{`
-        .convoy-marker { background: none !important; border: none !important; }
+        .convoy-marker { background: none !important; border: none !important; pointer-events: auto !important; }
         @keyframes hazard-pulse {
           0%, 100% { transform: scale(1); }
           50% { transform: scale(1.15); }
@@ -416,6 +416,8 @@ const ConvoyMap = ({ drivers, center, destination, routeCoordinates, hazards = [
       <div ref={containerRef} className="absolute inset-0 z-0" />
     </>
   );
-};
+});
+
+ConvoyMap.displayName = "ConvoyMap";
 
 export default ConvoyMap;
