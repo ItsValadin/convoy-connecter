@@ -46,45 +46,65 @@ export interface RouteGeometry {
   coordinates: [number, number][]; // [lat, lng] pairs
 }
 
+const fetchWithTimeout = (url: string, timeoutMs: number): Promise<Response> => {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(id));
+};
+
 export const fetchRoute = async (
   fromLat: number,
   fromLng: number,
   toLat: number,
   toLng: number
 ): Promise<RouteGeometry | null> => {
-  try {
-    const url = `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson&steps=true`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!data.routes?.length) return null;
+  const url = `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson&steps=true`;
 
-    const route: OSRMRoute = data.routes[0];
-    const steps: RouteStep[] = route.legs
-      .flatMap((leg) => leg.steps)
-      .filter((s) => s.distance > 0)
-      .map((s) => ({
-        instruction: buildInstruction(s.maneuver, s.name),
-        distance: s.distance,
-        duration: s.duration,
-        location: [s.maneuver.location[1], s.maneuver.location[0]] as [number, number],
-      }));
+  const MAX_RETRIES = 3;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetchWithTimeout(url, 8000);
+      if (res.status === 429 || res.status >= 500) {
+        // Retryable — wait with exponential backoff
+        await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, attempt)));
+        continue;
+      }
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (!data.routes?.length) return null;
 
-    // OSRM returns [lng, lat], convert to [lat, lng]
-    const coordinates: [number, number][] = route.geometry.coordinates.map(
-      ([lng, lat]) => [lat, lng]
-    );
+      const route: OSRMRoute = data.routes[0];
+      const steps: RouteStep[] = route.legs
+        .flatMap((leg) => leg.steps)
+        .filter((s) => s.distance > 0)
+        .map((s) => ({
+          instruction: buildInstruction(s.maneuver, s.name),
+          distance: s.distance,
+          duration: s.duration,
+          location: [s.maneuver.location[1], s.maneuver.location[0]] as [number, number],
+        }));
 
-    return {
-      info: {
-        distance: route.distance,
-        duration: route.duration,
-        steps,
-      },
-      coordinates,
-    };
-  } catch (e) {
-    console.error("Routing error:", e);
-    return null;
+      // OSRM returns [lng, lat], convert to [lat, lng]
+      const coordinates: [number, number][] = route.geometry.coordinates.map(
+        ([lng, lat]) => [lat, lng]
+      );
+
+      return {
+        info: {
+          distance: route.distance,
+          duration: route.duration,
+          steps,
+        },
+        coordinates,
+      };
+    } catch (e) {
+      if (attempt < MAX_RETRIES - 1) {
+        await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, attempt)));
+        continue;
+      }
+      console.error("Routing error after retries:", e);
+      return null;
+    }
   }
+  return null;
 };
