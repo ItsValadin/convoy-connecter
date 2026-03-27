@@ -57,20 +57,14 @@ export const useBackgroundGeolocation = () => {
 
         // Ready the plugin with config
         await BackgroundGeolocation.ready({
-          // Location config
-          desiredAccuracy: BackgroundGeolocation.DESIRED_ACCURACY_HIGH,
-          distanceFilter: 5, // meters — emit location every 5m of movement
-          stopOnTerminate: false, // continue tracking after app is terminated
-          startOnBoot: true, // auto-start on device reboot
-          // Activity recognition
-          stopTimeout: 5, // minutes to wait before entering "still" state
-          // Application config
-          debug: false, // disable debug sounds/notifications
-          logLevel: BackgroundGeolocation.LOG_LEVEL_WARNING,
-          // Prevent the plugin from using its own HTTP sync — we handle it ourselves
+          distanceFilter: 5,
+          stopOnTerminate: false,
+          startOnBoot: true,
+          stopTimeout: 5,
+          debug: false,
+          logLevel: 2, // WARNING
           autoSync: false,
-          // iOS-specific
-          locationAuthorizationRequest: "Always", // request "Always" for background
+          locationAuthorizationRequest: "Always",
           backgroundPermissionRationale: {
             title: "Allow Convoy to track your location in the background?",
             message:
