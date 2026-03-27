@@ -296,12 +296,16 @@ export const useConvoy = (initialCenter: [number, number]) => {
       return;
     }
 
+    let lastDriversUpdate = 0;
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
         const { latitude, longitude, speed, heading } = position.coords;
         setGpsActive(true);
         latestPositionRef.current = { lat: latitude, lng: longitude, speed, heading };
-        // Update self in drivers list immediately so the marker moves locally
+        // Throttle driver state updates to ~250ms to reduce re-renders
+        const now = performance.now();
+        if (now - lastDriversUpdate < 250) return;
+        lastDriversUpdate = now;
         setDrivers((prev) => {
           const idx = prev.findIndex((d) => d.id === sessionIdRef.current);
           if (idx === -1) return prev;
