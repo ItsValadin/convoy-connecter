@@ -57,20 +57,30 @@ export const useBackgroundGeolocation = () => {
 
         // Ready the plugin with config
         await BackgroundGeolocation.ready({
-          distanceFilter: 5,
-          stopOnTerminate: false,
-          startOnBoot: true,
-          stopTimeout: 5,
-          debug: false,
-          logLevel: 2, // WARNING
-          autoSync: false,
-          locationAuthorizationRequest: "Always",
-          backgroundPermissionRationale: {
-            title: "Allow Convoy to track your location in the background?",
-            message:
-              "Convoy needs background location access so your convoy members can see your position even when the app is minimized.",
-            positiveAction: "Change to Always Allow",
-            negativeAction: "Cancel",
+          geolocation: {
+            distanceFilter: 5,
+            locationAuthorizationRequest: "Always",
+          },
+          app: {
+            stopOnTerminate: false,
+            startOnBoot: true,
+            backgroundPermissionRationale: {
+              title: "Allow Convoy to track your location in the background?",
+              message:
+                "Convoy needs background location access so your convoy members can see your position even when the app is minimized.",
+              positiveAction: "Change to Always Allow",
+              negativeAction: "Cancel",
+            },
+          },
+          activity: {
+            stopTimeout: 5,
+          },
+          logger: {
+            debug: false,
+            logLevel: 2, // WARNING
+          },
+          http: {
+            autoSync: false,
           },
         });
 
