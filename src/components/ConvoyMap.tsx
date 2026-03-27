@@ -416,8 +416,6 @@ const ConvoyMap = React.memo(({ drivers, center, destination, routeCoordinates, 
       <div ref={containerRef} className="absolute inset-0 z-0" />
     </>
   );
-};
-
 });
 
 ConvoyMap.displayName = "ConvoyMap";
