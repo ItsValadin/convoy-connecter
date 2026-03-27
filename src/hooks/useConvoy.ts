@@ -485,7 +485,7 @@ export const useConvoy = (initialCenter: [number, number]) => {
     setDestination(null);
     setIsLeader(false);
     toast("You left the convoy");
-  }, [convoyId]);
+  }, [convoyId, bgGeo]);
 
   // beforeunload: broadcast leave but keep DB record so auto-rejoin works on next load
   // visibilitychange: on hidden do nothing, on visible re-sync
