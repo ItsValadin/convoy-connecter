@@ -129,6 +129,8 @@ export const useHazards = (convoyId: string | null) => {
 
   const removeHazard = useCallback(
     async (hazardId: string) => {
+      // Optimistic local removal so the marker disappears immediately
+      setHazards((prev) => prev.filter((h) => h.id !== hazardId));
       const { error } = await supabase.from("convoy_hazards").delete().eq("id", hazardId);
       if (error) console.error("Error removing hazard:", error);
     },
