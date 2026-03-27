@@ -59,6 +59,7 @@ export const useBackgroundGeolocation = () => {
         await BackgroundGeolocation.ready({
           geolocation: {
             distanceFilter: 5,
+            stopTimeout: 5,
             locationAuthorizationRequest: "Always",
           },
           app: {
@@ -72,8 +73,8 @@ export const useBackgroundGeolocation = () => {
               negativeAction: "Cancel",
             },
           },
-          activity: {
-            stopTimeout: 5,
+          http: {
+            autoSync: false,
           },
           logger: {
             debug: false,
