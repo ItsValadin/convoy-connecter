@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { RealtimeChannel } from "@supabase/supabase-js";
+import { useBackgroundGeolocation } from "@/hooks/useBackgroundGeolocation";
 
 export interface Driver {
   id: string;
@@ -71,7 +72,7 @@ export const useConvoy = (initialCenter: [number, number]) => {
   const savedSession = loadSession();
   const sessionIdRef = useRef(savedSession?.sessionId || generateSessionId());
   const hasAttemptedRejoinRef = useRef(false);
-  const watchIdRef = useRef<number | null>(null);
+  const bgGeo = useBackgroundGeolocation();
   const channelRef = useRef<RealtimeChannel | null>(null);
   const positionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const dbIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -289,20 +290,13 @@ export const useConvoy = (initialCenter: [number, number]) => {
     dbIntervalRef.current = dbInterval;
   }, []);
 
-  // GPS tracking
+  // GPS tracking — uses background geolocation on native, browser API on web
   const startGpsTracking = useCallback(() => {
-    if (!navigator.geolocation) {
-      toast.error("Geolocation is not supported by your browser");
-      return;
-    }
-
     let lastDriversUpdate = 0;
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      (position) => {
-        const { latitude, longitude, speed, heading } = position.coords;
+    bgGeo.start({
+      onPosition: ({ latitude, longitude, speed, heading }) => {
         setGpsActive(true);
         latestPositionRef.current = { lat: latitude, lng: longitude, speed, heading };
-        // Throttle driver state updates to ~250ms to reduce re-renders
         const now = performance.now();
         if (now - lastDriversUpdate < 250) return;
         lastDriversUpdate = now;
@@ -314,20 +308,13 @@ export const useConvoy = (initialCenter: [number, number]) => {
           return updated;
         });
       },
-      (error) => {
-        console.error("GPS error:", error);
+      onError: (msg) => {
+        console.error("GPS error:", msg);
         setGpsActive(false);
-        if (error.code === error.PERMISSION_DENIED) {
-          toast.error("Location permission denied. Enable it in browser settings.");
-        } else if (error.code === error.POSITION_UNAVAILABLE) {
-          toast.error("Location unavailable. Check your GPS.");
-        } else if (error.code === error.TIMEOUT) {
-          toast.error("Location request timed out.");
-        }
+        toast.error(msg);
       },
-      { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
-    );
-  }, []);
+    });
+  }, [bgGeo]);
 
   const handleCreate = useCallback(async (name: string) => {
     const code = generateCode();
@@ -480,10 +467,7 @@ export const useConvoy = (initialCenter: [number, number]) => {
     // Cleanup
     channelRef.current?.unsubscribe();
     channelRef.current = null;
-    if (watchIdRef.current !== null) {
-      navigator.geolocation.clearWatch(watchIdRef.current);
-      watchIdRef.current = null;
-    }
+    bgGeo.stop();
     if (positionIntervalRef.current) {
       clearInterval(positionIntervalRef.current);
       positionIntervalRef.current = null;
@@ -501,7 +485,7 @@ export const useConvoy = (initialCenter: [number, number]) => {
     setDestination(null);
     setIsLeader(false);
     toast("You left the convoy");
-  }, [convoyId]);
+  }, [convoyId, bgGeo]);
 
   // beforeunload: broadcast leave but keep DB record so auto-rejoin works on next load
   // visibilitychange: on hidden do nothing, on visible re-sync
@@ -562,9 +546,7 @@ export const useConvoy = (initialCenter: [number, number]) => {
   useEffect(() => {
     return () => {
       channelRef.current?.unsubscribe();
-      if (watchIdRef.current !== null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-      }
+      bgGeo.stop();
       if (positionIntervalRef.current) {
         clearInterval(positionIntervalRef.current);
       }
