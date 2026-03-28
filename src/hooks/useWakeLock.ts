@@ -1,12 +1,12 @@
 import { useEffect, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
 import { KeepAwake } from "@capacitor-community/keep-awake";
+import { toast } from "sonner";
 
-type NoSleepInstance = { enable: () => void; disable: () => void };
+const IOS_AUTOLOCK_KEY = "convoy-ios-autolock-dismissed";
 
 export function useWakeLock() {
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
-  const noSleepRef = useRef<NoSleepInstance | null>(null);
 
   useEffect(() => {
     // Native: use KeepAwake plugin (works reliably on iOS/Android)
@@ -17,50 +17,26 @@ export function useWakeLock() {
       };
     }
 
-    // Detect iOS web (Safari PWA) — Wake Lock API is unreliable on iOS
+    // Detect iOS web (Safari PWA) — show settings instructions
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
       (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
     if (isIOS) {
-      let cleanedUp = false;
-      let onVisibilityChange: (() => void) | null = null;
-      let enableOnInteraction: (() => void) | null = null;
-
-      // Dynamically import to avoid HMR side-effect issues
-      import("nosleep.js").then(({ default: NoSleep }) => {
-        if (cleanedUp) return;
-        const noSleep = new NoSleep();
-        noSleepRef.current = noSleep;
-
-        enableOnInteraction = () => {
-          noSleep.enable();
-          document.removeEventListener("touchstart", enableOnInteraction!);
-          document.removeEventListener("click", enableOnInteraction!);
-        };
-
-        // NoSleep requires a user gesture to start on iOS
-        document.addEventListener("touchstart", enableOnInteraction, { once: true });
-        document.addEventListener("click", enableOnInteraction, { once: true });
-
-        // Re-enable after returning from background
-        onVisibilityChange = () => {
-          if (document.visibilityState === "visible") {
-            noSleep.enable();
-          }
-        };
-        document.addEventListener("visibilitychange", onVisibilityChange);
-      });
-
-      return () => {
-        cleanedUp = true;
-        if (onVisibilityChange) document.removeEventListener("visibilitychange", onVisibilityChange);
-        if (enableOnInteraction) {
-          document.removeEventListener("touchstart", enableOnInteraction);
-          document.removeEventListener("click", enableOnInteraction);
-        }
-        noSleepRef.current?.disable();
-        noSleepRef.current = null;
-      };
+      const dismissed = localStorage.getItem(IOS_AUTOLOCK_KEY);
+      if (!dismissed) {
+        toast.info("Keep your screen on", {
+          description:
+            "For the best experience, go to Settings → Display & Brightness → Auto-Lock and set it to \"Never\" while using this app.",
+          duration: 15000,
+          action: {
+            label: "Got it",
+            onClick: () => {
+              localStorage.setItem(IOS_AUTOLOCK_KEY, "1");
+            },
+          },
+        });
+      }
+      return;
     }
 
     // Other browsers: use Wake Lock API
