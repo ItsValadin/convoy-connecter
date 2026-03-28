@@ -22,34 +22,43 @@ export function useWakeLock() {
       (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
     if (isIOS) {
-      // Dynamically import NoSleep.js to avoid side-effect issues during HMR
+      let cleanedUp = false;
+      let onVisibilityChange: (() => void) | null = null;
+      let enableOnInteraction: (() => void) | null = null;
+
+      // Dynamically import to avoid HMR side-effect issues
       import("nosleep.js").then(({ default: NoSleep }) => {
+        if (cleanedUp) return;
         const noSleep = new NoSleep();
         noSleepRef.current = noSleep;
 
-      const enableOnInteraction = () => {
-        noSleep.enable();
-        document.removeEventListener("touchstart", enableOnInteraction);
-        document.removeEventListener("click", enableOnInteraction);
-      };
-
-      // NoSleep requires a user gesture to start on iOS
-      document.addEventListener("touchstart", enableOnInteraction, { once: true });
-      document.addEventListener("click", enableOnInteraction, { once: true });
-
-      // Re-enable after returning from background
-      const onVisibilityChange = () => {
-        if (document.visibilityState === "visible") {
+        enableOnInteraction = () => {
           noSleep.enable();
-        }
-      };
-      document.addEventListener("visibilitychange", onVisibilityChange);
+          document.removeEventListener("touchstart", enableOnInteraction!);
+          document.removeEventListener("click", enableOnInteraction!);
+        };
+
+        // NoSleep requires a user gesture to start on iOS
+        document.addEventListener("touchstart", enableOnInteraction, { once: true });
+        document.addEventListener("click", enableOnInteraction, { once: true });
+
+        // Re-enable after returning from background
+        onVisibilityChange = () => {
+          if (document.visibilityState === "visible") {
+            noSleep.enable();
+          }
+        };
+        document.addEventListener("visibilitychange", onVisibilityChange);
+      });
 
       return () => {
-        document.removeEventListener("visibilitychange", onVisibilityChange);
-        document.removeEventListener("touchstart", enableOnInteraction);
-        document.removeEventListener("click", enableOnInteraction);
-        noSleep.disable();
+        cleanedUp = true;
+        if (onVisibilityChange) document.removeEventListener("visibilitychange", onVisibilityChange);
+        if (enableOnInteraction) {
+          document.removeEventListener("touchstart", enableOnInteraction);
+          document.removeEventListener("click", enableOnInteraction);
+        }
+        noSleepRef.current?.disable();
         noSleepRef.current = null;
       };
     }
