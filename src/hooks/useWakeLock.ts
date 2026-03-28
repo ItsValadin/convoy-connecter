@@ -22,9 +22,10 @@ export function useWakeLock() {
       (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
     if (isIOS) {
-      // Use NoSleep.js which plays a silent video to prevent sleep on iOS Safari
-      const noSleep = new NoSleep();
-      noSleepRef.current = noSleep;
+      // Dynamically import NoSleep.js to avoid side-effect issues during HMR
+      import("nosleep.js").then(({ default: NoSleep }) => {
+        const noSleep = new NoSleep();
+        noSleepRef.current = noSleep;
 
       const enableOnInteraction = () => {
         noSleep.enable();
