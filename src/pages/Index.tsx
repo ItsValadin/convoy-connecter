@@ -443,7 +443,7 @@ const Index = () => {
               <AlertTriangle className="w-5 h-5 text-convoy-amber" />
             </Button>
             {showHazardPicker && (
-              <div className="absolute right-12 top-0 bg-card/95 backdrop-blur-xl border border-border rounded-xl p-2 shadow-xl flex flex-col gap-1 min-w-[140px] animate-in slide-in-from-right-2 fade-in duration-200 z-50">
+              <div className="absolute right-12 bottom-0 bg-card/95 backdrop-blur-xl border border-border rounded-xl p-2 shadow-xl flex flex-col gap-1 min-w-[140px] animate-in slide-in-from-right-2 fade-in duration-200 z-50">
                 {HAZARD_TYPES.map((h) => (
                   <button
                     key={h.type}
