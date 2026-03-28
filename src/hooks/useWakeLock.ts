@@ -1,11 +1,12 @@
 import { useEffect, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
 import { KeepAwake } from "@capacitor-community/keep-awake";
-import NoSleep from "nosleep.js";
+
+type NoSleepInstance = { enable: () => void; disable: () => void };
 
 export function useWakeLock() {
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
-  const noSleepRef = useRef<NoSleep | null>(null);
+  const noSleepRef = useRef<NoSleepInstance | null>(null);
 
   useEffect(() => {
     // Native: use KeepAwake plugin (works reliably on iOS/Android)
