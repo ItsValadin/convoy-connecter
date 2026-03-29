@@ -465,9 +465,20 @@ export const useConvoy = (initialCenter: [number, number]) => {
       console.error("Failed to broadcast leave:", e);
     }
 
-    if (convoyId) {
-      // Clean up trip stats
-      await tripStats.cleanupStats();
+    if (convoyId && convoyCode) {
+      // Save trip to history (keep stats in DB for viewing later)
+      const TRIPS_KEY = "convoy-trip-history";
+      try {
+        const existing = JSON.parse(localStorage.getItem(TRIPS_KEY) || "[]");
+        const newTrip = { convoyId, convoyCode, timestamp: new Date().toISOString() };
+        // Prepend, keep last 20 trips
+        const updated = [newTrip, ...existing.filter((t: any) => t.convoyId !== convoyId)].slice(0, 20);
+        localStorage.setItem(TRIPS_KEY, JSON.stringify(updated));
+      } catch {}
+
+      // Persist final stats before leaving
+      await tripStats.persistStats();
+
       await supabase
         .from("convoy_members")
         .delete()

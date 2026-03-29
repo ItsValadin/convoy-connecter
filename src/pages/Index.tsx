@@ -13,6 +13,7 @@ import { useHazards, type HazardType, getHazardLabel } from "@/hooks/useHazards"
 import { useProximityAlerts } from "@/hooks/useProximityAlerts";
 
 import { toast } from "sonner";
+import BottomTabBar from "@/components/BottomTabBar";
 import { Crosshair, Volume2, VolumeX, Navigation, Clock, Gauge, Download, X, Sun, Moon, RotateCw, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConvoy } from "@/hooks/useConvoy";
@@ -447,7 +448,7 @@ const Index = () => {
             </div>
           </div>
       )}
-      <div className="absolute bottom-36 right-2 sm:bottom-28 sm:right-4 z-10 flex flex-col gap-2">
+      <div className="absolute bottom-44 right-2 sm:bottom-36 sm:right-4 z-10 flex flex-col gap-2">
         {convoyCode && (
           <div className="relative">
             <Button
@@ -500,9 +501,9 @@ const Index = () => {
       </div>
 
 
-      {/* Bottom status bar */}
+      {/* Bottom status bar - positioned above tab bar */}
       {convoyCode && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 bg-card/90 backdrop-blur-xl border border-border rounded-full px-3 sm:px-5 py-2 sm:py-2.5 flex items-center gap-2 sm:gap-4 max-w-[90vw]">
+        <div className="absolute bottom-14 left-1/2 -translate-x-1/2 z-10 bg-card/90 backdrop-blur-xl border border-border rounded-full px-3 sm:px-5 py-2 sm:py-2.5 flex items-center gap-2 sm:gap-4 max-w-[90vw]">
           <div className={`w-2 h-2 rounded-full ${gpsActive ? "bg-primary" : "bg-convoy-amber"} animate-pulse`} />
           <span className="font-display text-xs text-muted-foreground">
             {gpsActive ? "GPS LIVE" : "GPS PENDING"} • {drivers.length} vehicles tracked
@@ -537,6 +538,7 @@ const Index = () => {
           </div>
         </div>
       )}
+      <BottomTabBar />
     </div>
   );
 };
