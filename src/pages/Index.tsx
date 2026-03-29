@@ -538,6 +538,7 @@ const Index = () => {
           </div>
         </div>
       )}
+      <BottomTabBar />
     </div>
   );
 };
