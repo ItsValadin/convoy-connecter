@@ -448,7 +448,7 @@ const Index = () => {
             </div>
           </div>
       )}
-      <div className="absolute bottom-36 right-2 sm:bottom-28 sm:right-4 z-10 flex flex-col gap-2">
+      <div className="absolute bottom-44 right-2 sm:bottom-36 sm:right-4 z-10 flex flex-col gap-2">
         {convoyCode && (
           <div className="relative">
             <Button
