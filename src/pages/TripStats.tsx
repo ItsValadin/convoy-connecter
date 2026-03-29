@@ -141,7 +141,7 @@ const TripStats = () => {
 
       <div className="p-4 space-y-4 max-w-2xl mx-auto">
         {/* Active convoy card */}
-        {activeConvoyId && (!selectedTrip || selectedTrip.convoyId !== activeConvoyId || showTripList) && (
+        {activeConvoyId && (!selectedTrip || selectedTrip.convoyId !== activeConvoyId) && (
           <button
             onClick={() => {
               const raw = localStorage.getItem("convoy-session");
@@ -162,7 +162,7 @@ const TripStats = () => {
         )}
 
         {/* Trip list view */}
-        {(showTripList || !hasTripSelected) && (
+        {!hasTripSelected && (
           <>
             {trips.length > 0 ? (
               <>
