@@ -108,7 +108,6 @@ const TripStats = () => {
   };
 
   const hasTripSelected = selectedTrip !== null;
-  const showTripList = !hasTripSelected || (stats.length === 0 && !activeConvoyId);
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-16">
@@ -129,7 +128,7 @@ const TripStats = () => {
             </p>
           </div>
           {/* Back to list button when viewing a trip */}
-          {hasTripSelected && stats.length > 0 && trips.length > 0 && (
+          {hasTripSelected && (
             <button
               onClick={() => setSelectedTrip(null)}
               className="px-3 py-1.5 rounded-lg border border-border bg-secondary/40 font-display text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors"
@@ -142,7 +141,7 @@ const TripStats = () => {
 
       <div className="p-4 space-y-4 max-w-2xl mx-auto">
         {/* Active convoy card */}
-        {activeConvoyId && (!selectedTrip || selectedTrip.convoyId !== activeConvoyId || showTripList) && (
+        {activeConvoyId && (!selectedTrip || selectedTrip.convoyId !== activeConvoyId) && (
           <button
             onClick={() => {
               const raw = localStorage.getItem("convoy-session");
@@ -163,7 +162,7 @@ const TripStats = () => {
         )}
 
         {/* Trip list view */}
-        {(showTripList || !hasTripSelected) && (
+        {!hasTripSelected && (
           <>
             {trips.length > 0 ? (
               <>
@@ -287,12 +286,14 @@ const TripStats = () => {
           </>
         )}
 
-        {/* Loading state for selected trip with no stats yet */}
-        {hasTripSelected && stats.length === 0 && selectedTrip?.convoyId === activeConvoyId && (
+        {/* Empty state for selected trip with no stats */}
+        {hasTripSelected && stats.length === 0 && (
           <div className="text-center py-16">
             <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <p className="font-display text-muted-foreground">
-              No stats yet — start driving!
+              {selectedTrip?.convoyId === activeConvoyId
+                ? "No stats yet — start driving!"
+                : "No stats recorded for this trip"}
             </p>
           </div>
         )}
