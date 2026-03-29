@@ -107,6 +107,9 @@ const TripStats = () => {
     return d.toLocaleDateString([], { month: "short", day: "numeric" }) + " " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  const hasTripSelected = selectedTrip !== null;
+  const showTripList = !hasTripSelected || (stats.length === 0 && !activeConvoyId);
+
   return (
     <div className="min-h-screen bg-background text-foreground pb-16">
       {/* Header */}
@@ -120,145 +123,178 @@ const TripStats = () => {
               TRIP STATS
             </h1>
             <p className="text-xs text-muted-foreground">
-              {selectedTrip
+              {selectedTrip && stats.length > 0
                 ? `Convoy ${selectedTrip.convoyCode} • ${stats.length} driver${stats.length !== 1 ? "s" : ""}`
-                : "No trips yet"}
+                : `${trips.length} past trip${trips.length !== 1 ? "s" : ""}`}
             </p>
           </div>
+          {/* Back to list button when viewing a trip */}
+          {hasTripSelected && stats.length > 0 && trips.length > 0 && (
+            <button
+              onClick={() => setSelectedTrip(null)}
+              className="px-3 py-1.5 rounded-lg border border-border bg-secondary/40 font-display text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors"
+            >
+              All Trips
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Trip selector - horizontal scroll */}
-      {trips.length > 0 && (
-        <div className="px-4 py-3 border-b border-border">
-          <p className="font-display text-[10px] uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1.5">
-            <History className="w-3 h-3" /> Trip History
-          </p>
-          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-            {/* Active convoy chip */}
-            {activeConvoyId && (
-              <button
-                onClick={() => {
-                  const raw = localStorage.getItem("convoy-session");
-                  if (raw) {
-                    const s = JSON.parse(raw);
-                    setSelectedTrip({ convoyId: s.convoyId, convoyCode: s.convoyCode, timestamp: new Date().toISOString() });
-                  }
-                }}
-                className={`shrink-0 px-3 py-1.5 rounded-lg border font-display text-xs transition-colors ${
-                  selectedTrip?.convoyId === activeConvoyId
-                    ? "bg-primary/20 border-primary/50 text-primary"
-                    : "bg-secondary/40 border-border text-muted-foreground hover:border-primary/30"
-                }`}
-              >
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse mr-1.5" />
-                Live
-              </button>
-            )}
-            {trips.map((trip) => (
-              <button
-                key={trip.convoyId + trip.timestamp}
-                onClick={() => setSelectedTrip(trip)}
-                className={`shrink-0 px-3 py-1.5 rounded-lg border font-display text-xs transition-colors ${
-                  selectedTrip?.convoyId === trip.convoyId && selectedTrip?.convoyId !== activeConvoyId
-                    ? "bg-primary/20 border-primary/50 text-primary"
-                    : "bg-secondary/40 border-border text-muted-foreground hover:border-primary/30"
-                }`}
-              >
-                {trip.convoyCode} • {formatDate(trip.timestamp)}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Stats cards */}
       <div className="p-4 space-y-4 max-w-2xl mx-auto">
-        {stats.length === 0 ? (
+        {/* Active convoy card */}
+        {activeConvoyId && (!selectedTrip || selectedTrip.convoyId !== activeConvoyId || showTripList) && (
+          <button
+            onClick={() => {
+              const raw = localStorage.getItem("convoy-session");
+              if (raw) {
+                const s = JSON.parse(raw);
+                setSelectedTrip({ convoyId: s.convoyId, convoyCode: s.convoyCode, timestamp: new Date().toISOString() });
+              }
+            }}
+            className="w-full text-left bg-card border border-primary/30 rounded-xl p-4 flex items-center gap-3 hover:border-primary/50 transition-colors"
+          >
+            <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="font-display text-sm font-bold text-foreground">Live Convoy</p>
+              <p className="text-xs text-muted-foreground">Tap to view real-time stats</p>
+            </div>
+            <BarChart3 className="w-4 h-4 text-primary shrink-0" />
+          </button>
+        )}
+
+        {/* Trip list view */}
+        {(showTripList || !hasTripSelected) && (
+          <>
+            {trips.length > 0 ? (
+              <>
+                <p className="font-display text-[10px] uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                  <History className="w-3 h-3" /> Past Trips
+                </p>
+                <div className="space-y-2">
+                  {trips.map((trip) => (
+                    <button
+                      key={trip.convoyId + trip.timestamp}
+                      onClick={() => setSelectedTrip(trip)}
+                      className="w-full text-left bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:border-primary/30 transition-colors"
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-secondary/60 flex items-center justify-center shrink-0">
+                        <Activity className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-display text-sm font-bold text-foreground">
+                          Convoy {trip.convoyCode}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDate(trip.timestamp)}
+                        </p>
+                      </div>
+                      <span className="text-muted-foreground text-xs">→</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : !activeConvoyId ? (
+              <div className="text-center py-16">
+                <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="font-display text-muted-foreground">
+                  Join or create a convoy to track stats
+                </p>
+              </div>
+            ) : null}
+          </>
+        )}
+
+        {/* Stats detail view */}
+        {hasTripSelected && stats.length > 0 && (
+          <>
+            {stats.map((driver) => (
+              <div
+                key={driver.sessionId}
+                className="bg-card border border-border rounded-xl overflow-hidden"
+              >
+                {/* Driver header */}
+                <div className="px-4 py-3 border-b border-border flex items-center gap-3">
+                  <div
+                    className="w-4 h-4 rounded-full pulse-marker shrink-0"
+                    style={{ backgroundColor: driver.driverColor }}
+                  />
+                  <span className="font-display text-sm font-bold text-foreground flex-1">
+                    {driver.driverName}
+                  </span>
+                </div>
+
+                {/* Stats grid */}
+                <div className="grid grid-cols-2 gap-px bg-border">
+                  <div className="bg-card p-4 flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5">
+                      <Gauge className="w-3.5 h-3.5 text-primary" />
+                      <span className="font-display text-[10px] uppercase tracking-widest text-muted-foreground">
+                        Top Speed
+                      </span>
+                      {driver.topSpeed === bestTopSpeed && driver.topSpeed > 0 && (
+                        <Crown className="w-3 h-3 text-convoy-amber" />
+                      )}
+                    </div>
+                    <span className="font-display text-2xl font-bold text-foreground">
+                      {formatSpeed(driver.topSpeed)}
+                    </span>
+                  </div>
+
+                  <div className="bg-card p-4 flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5">
+                      <Activity className="w-3.5 h-3.5 text-accent" />
+                      <span className="font-display text-[10px] uppercase tracking-widest text-muted-foreground">
+                        Avg Speed
+                      </span>
+                    </div>
+                    <span className="font-display text-2xl font-bold text-foreground">
+                      {formatSpeed(driver.avgSpeed)}
+                    </span>
+                  </div>
+
+                  <div className="bg-card p-4 flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5">
+                      <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                      <span className="font-display text-[10px] uppercase tracking-widest text-muted-foreground">
+                        Best Accel
+                      </span>
+                      {driver.fastestAcceleration === bestAccel && driver.fastestAcceleration > 0 && (
+                        <Crown className="w-3 h-3 text-convoy-amber" />
+                      )}
+                    </div>
+                    <span className="font-display text-2xl font-bold text-foreground">
+                      {formatAccel(driver.fastestAcceleration)}
+                    </span>
+                  </div>
+
+                  <div className="bg-card p-4 flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5">
+                      <TrendingDown className="w-3.5 h-3.5 text-destructive" />
+                      <span className="font-display text-[10px] uppercase tracking-widest text-muted-foreground">
+                        Hard Brake
+                      </span>
+                      {driver.hardestBrake === bestBrake && driver.hardestBrake > 0 && (
+                        <Crown className="w-3 h-3 text-convoy-amber" />
+                      )}
+                    </div>
+                    <span className="font-display text-2xl font-bold text-foreground">
+                      {formatAccel(driver.hardestBrake)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+
+        {/* Loading state for selected trip with no stats yet */}
+        {hasTripSelected && stats.length === 0 && selectedTrip?.convoyId === activeConvoyId && (
           <div className="text-center py-16">
             <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <p className="font-display text-muted-foreground">
-              {selectedTrip ? "No stats yet — start driving!" : "Join or create a convoy to track stats"}
+              No stats yet — start driving!
             </p>
           </div>
-        ) : (
-          stats.map((driver) => (
-            <div
-              key={driver.sessionId}
-              className="bg-card border border-border rounded-xl overflow-hidden"
-            >
-              {/* Driver header */}
-              <div className="px-4 py-3 border-b border-border flex items-center gap-3">
-                <div
-                  className="w-4 h-4 rounded-full pulse-marker shrink-0"
-                  style={{ backgroundColor: driver.driverColor }}
-                />
-                <span className="font-display text-sm font-bold text-foreground flex-1">
-                  {driver.driverName}
-                </span>
-              </div>
-
-              {/* Stats grid */}
-              <div className="grid grid-cols-2 gap-px bg-border">
-                <div className="bg-card p-4 flex flex-col gap-1">
-                  <div className="flex items-center gap-1.5">
-                    <Gauge className="w-3.5 h-3.5 text-primary" />
-                    <span className="font-display text-[10px] uppercase tracking-widest text-muted-foreground">
-                      Top Speed
-                    </span>
-                    {driver.topSpeed === bestTopSpeed && driver.topSpeed > 0 && (
-                      <Crown className="w-3 h-3 text-convoy-amber" />
-                    )}
-                  </div>
-                  <span className="font-display text-2xl font-bold text-foreground">
-                    {formatSpeed(driver.topSpeed)}
-                  </span>
-                </div>
-
-                <div className="bg-card p-4 flex flex-col gap-1">
-                  <div className="flex items-center gap-1.5">
-                    <Activity className="w-3.5 h-3.5 text-accent" />
-                    <span className="font-display text-[10px] uppercase tracking-widest text-muted-foreground">
-                      Avg Speed
-                    </span>
-                  </div>
-                  <span className="font-display text-2xl font-bold text-foreground">
-                    {formatSpeed(driver.avgSpeed)}
-                  </span>
-                </div>
-
-                <div className="bg-card p-4 flex flex-col gap-1">
-                  <div className="flex items-center gap-1.5">
-                    <TrendingUp className="w-3.5 h-3.5 text-primary" />
-                    <span className="font-display text-[10px] uppercase tracking-widest text-muted-foreground">
-                      Best Accel
-                    </span>
-                    {driver.fastestAcceleration === bestAccel && driver.fastestAcceleration > 0 && (
-                      <Crown className="w-3 h-3 text-convoy-amber" />
-                    )}
-                  </div>
-                  <span className="font-display text-2xl font-bold text-foreground">
-                    {formatAccel(driver.fastestAcceleration)}
-                  </span>
-                </div>
-
-                <div className="bg-card p-4 flex flex-col gap-1">
-                  <div className="flex items-center gap-1.5">
-                    <TrendingDown className="w-3.5 h-3.5 text-destructive" />
-                    <span className="font-display text-[10px] uppercase tracking-widest text-muted-foreground">
-                      Hard Brake
-                    </span>
-                    {driver.hardestBrake === bestBrake && driver.hardestBrake > 0 && (
-                      <Crown className="w-3 h-3 text-convoy-amber" />
-                    )}
-                  </div>
-                  <span className="font-display text-2xl font-bold text-foreground">
-                    {formatAccel(driver.hardestBrake)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))
         )}
       </div>
 
