@@ -50,6 +50,7 @@ interface ConvoyMapProps {
   hazards?: HazardPin[];
   isLeader?: boolean;
   mapTheme?: MapTheme;
+  bearing?: number | null;
   onMapReady?: (map: L.Map) => void;
   onMapClick?: (lat: number, lng: number) => void;
   onHazardClick?: (hazardId: string) => void;
@@ -139,7 +140,7 @@ const TILE_URLS: Record<MapTheme, string> = {
   light: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
 };
 
-const ConvoyMap = React.memo(({ drivers, center, destination, routeCoordinates, hazards = [], isLeader, mapTheme = "dark", onMapReady, onMapClick, onHazardClick }: ConvoyMapProps) => {
+const ConvoyMap = React.memo(({ drivers, center, destination, routeCoordinates, hazards = [], isLeader, mapTheme = "dark", bearing = null, onMapReady, onMapClick, onHazardClick }: ConvoyMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const animationsRef = useRef<Map<string, AnimationState>>(new Map());
