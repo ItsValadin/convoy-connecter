@@ -361,6 +361,35 @@ const ConvoyMap = React.memo(({ drivers, center, destination, routeCoordinates, 
     });
   }, [hazards]);
 
+  // Apply bearing rotation to map container
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const rotation = typeof bearing === "number" ? -bearing : 0;
+    containerRef.current.style.transform = `rotate(${rotation}deg)`;
+    containerRef.current.style.transition = "transform 0.5s ease-out";
+  }, [bearing]);
+
+  // Counter-rotate markers so they stay upright
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const counterRotation = typeof bearing === "number" ? bearing : 0;
+    // Counter-rotate all marker icons
+    const markerEls = document.querySelectorAll<HTMLElement>(".convoy-marker");
+    markerEls.forEach((el) => {
+      el.style.transform = `rotate(${counterRotation}deg)`;
+    });
+    // Counter-rotate tooltips
+    const tooltipEls = document.querySelectorAll<HTMLElement>(".leaflet-tooltip");
+    tooltipEls.forEach((el) => {
+      el.style.transform = `rotate(${counterRotation}deg)`;
+    });
+    // Counter-rotate zoom controls
+    const controlEls = document.querySelectorAll<HTMLElement>(".leaflet-control-zoom");
+    controlEls.forEach((el) => {
+      el.style.transform = `rotate(${counterRotation}deg)`;
+    });
+  }, [bearing, drivers, hazards, destination]);
+
   return (
     <>
       <style>{`
@@ -408,13 +437,8 @@ const ConvoyMap = React.memo(({ drivers, center, destination, routeCoordinates, 
           color: hsl(152 80% 50%) !important;
           border-color: hsl(220 15% 22%) !important;
         }
-        /* Counter-rotate markers and controls when map is rotated */
-        .leaflet-marker-icon, .leaflet-marker-shadow,
-        .leaflet-control-zoom, .leaflet-control-attribution {
-          transition: transform 0.3s ease;
-        }
       `}</style>
-      <div ref={containerRef} className="absolute inset-0 z-0" />
+      <div ref={containerRef} className="absolute inset-0 z-0" style={{ transformOrigin: "center center" }} />
     </>
   );
 });
