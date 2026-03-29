@@ -1,51 +1,61 @@
 
 
-## Plan: Optimize Map Performance
+## Trip Stats Page
 
-### Problem
-The `ConvoyMap` component and its parent `Index` page have several sources of unnecessary re-renders and inefficient patterns that cause jank, especially with multiple drivers.
+### Overview
+Add a new "/stats" page showing real-time trip statistics for every driver in the convoy. Stats are computed client-side from GPS data and stored in a new database table so all convoy members can view each other's stats.
 
-### Changes
+### Stats Tracked (per driver)
+- **Top Speed** — highest speed recorded during the trip
+- **Average Speed** — mean of all non-zero speed readings
+- **Fastest Acceleration** — largest positive speed delta between consecutive readings
+- **Hardest Brake** — largest negative speed delta between consecutive readings
 
-#### 1. Memoize ConvoyMap with `React.memo`
-Wrap `ConvoyMap` in `React.memo` to prevent re-renders from unrelated parent state changes (panel toggles, hazard picker, mute state, etc.).
+### Database Changes
+New `convoy_trip_stats` table:
 
-#### 2. Stabilize callback props passed to ConvoyMap
-In `Index.tsx`, the `onMapReady`, `onMapClick`, and `onHazardClick` handlers are currently inline arrow functions that create new references every render, defeating `React.memo`. Wrap them in `useCallback`.
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK, default gen_random_uuid() |
+| convoy_id | uuid | FK to convoys |
+| session_id | text | identifies the driver |
+| driver_name | text | display name |
+| driver_color | text | marker color |
+| top_speed | double precision | m/s, default 0 |
+| avg_speed | double precision | m/s, default 0 |
+| fastest_acceleration | double precision | m/s², default 0 |
+| hardest_brake | double precision | m/s², default 0 |
+| updated_at | timestamptz | default now() |
+| created_at | timestamptz | default now() |
 
-#### 3. Stabilize the `hazards` prop
-The `hazards.map(...)` in the JSX creates a new array reference every render. Move it to a `useMemo` so `ConvoyMap` only re-renders when hazard data actually changes.
+- Unique constraint on (convoy_id, session_id)
+- Public RLS policies (matching existing pattern)
+- Enable realtime so stats update live across devices
 
-#### 4. Batch driver state updates in `useConvoy`
-The GPS `watchPosition` callback calls `setDrivers` on every position update (can be 1-4 Hz). The broadcast handler also calls `setDrivers` per-driver per-500ms. These are already functional updates which is good, but we can throttle the local GPS-driven `setDrivers` to ~250ms to reduce render frequency.
+### Client-Side Changes
 
-#### 5. Improve tile caching in the service worker
-The current Workbox config only caches OpenStreetMap tiles (`tile.openstreetmap.org`), but the app uses CartoDB tiles (`basemaps.cartocdn.com`). Add a runtime caching rule for CartoDB so tiles are cached locally for 30 days, eliminating redundant network fetches and improving panning smoothness.
+1. **`src/hooks/useTripStats.ts`** — New hook that:
+   - Tracks local speed history in a ref (previous speed + timestamp)
+   - On each GPS update, computes acceleration = (speed₂ - speed₁) / Δt
+   - Maintains running max/min/avg in refs
+   - Upserts stats to `convoy_trip_stats` every 5 seconds (same cadence as DB position persist)
+   - Subscribes to realtime changes on `convoy_trip_stats` filtered by convoy_id to display other drivers' stats
 
-#### 6. Add `will-change: transform` to map container
-Add a CSS hint so the browser promotes the map to its own compositor layer, improving scroll/pan performance.
+2. **`src/pages/TripStats.tsx`** — New page showing:
+   - Card per driver (colored by their convoy color)
+   - Four stat values displayed with icons, converted to mph for display
+   - Accessible from the convoy panel via a "Trip Stats" button
+   - Back button to return to map
 
-### Files Modified
-- `src/components/ConvoyMap.tsx` — wrap export in `React.memo`
-- `src/pages/Index.tsx` — `useCallback` for map handlers, `useMemo` for hazards array
-- `src/hooks/useConvoy.ts` — throttle local GPS `setDrivers` updates
-- `vite.config.ts` — add CartoDB tile caching rule to Workbox config
-- `src/index.css` — add `will-change` hint for map container
+3. **`src/components/ConvoyPanel.tsx`** — Add a "Trip Stats" link/button visible when in an active convoy
 
-### Technical Details
+4. **`src/App.tsx`** — Add route `/stats`
 
-**Tile caching rule** (vite.config.ts):
-```js
-{
-  urlPattern: /^https:\/\/[a-d]\.basemaps\.cartocdn\.com\/.*/i,
-  handler: "CacheFirst",
-  options: {
-    cacheName: "carto-tiles",
-    expiration: { maxEntries: 500, maxAgeSeconds: 60 * 60 * 24 * 30 },
-    cacheableResponse: { statuses: [0, 200] },
-  },
-}
-```
+5. **`src/hooks/useConvoy.ts`** — Integrate `useTripStats` hook, calling its update method from the GPS `onPosition` callback. Reset stats on convoy join/create. Clean up stats record on leave.
 
-**GPS throttle** — track `lastSetDriversTime` and skip `setDrivers` if <250ms since last call, while always updating the ref for broadcast accuracy.
+### Technical Notes
+- Speed from GPS is in m/s; display converts to mph (×2.237)
+- Acceleration is derived client-side: `(currentSpeed - previousSpeed) / timeDelta`
+- Stats persist to DB so they survive page refreshes and are visible to all members
+- Hardest brake is stored as a positive magnitude for display simplicity
 
