@@ -361,6 +361,9 @@ export const useConvoy = (initialCenter: [number, number]) => {
     setConvoyCode(code);
     setConvoyId(convoy.id);
     setIsLeader(true);
+    selfNameRef.current = name;
+    selfColorRef.current = DRIVER_COLORS[colorIdx];
+    tripStats.resetStats();
     saveSession({ convoyId: convoy.id, convoyCode: code, sessionId: sessionIdRef.current, name, color: DRIVER_COLORS[colorIdx], isLeader: true });
     await fetchMembers(convoy.id);
     subscribeToConvoy(convoy.id);
@@ -411,6 +414,9 @@ export const useConvoy = (initialCenter: [number, number]) => {
     setConvoyCode(code.toUpperCase());
     setConvoyId(convoy.id);
     setIsLeader(false);
+    selfNameRef.current = name;
+    selfColorRef.current = DRIVER_COLORS[colorIdx];
+    tripStats.resetStats();
     saveSession({ convoyId: convoy.id, convoyCode: code.toUpperCase(), sessionId: sessionIdRef.current, name, color: DRIVER_COLORS[colorIdx], isLeader: false });
     await fetchMembers(convoy.id);
     await fetchDestination(convoy.id);
@@ -460,6 +466,8 @@ export const useConvoy = (initialCenter: [number, number]) => {
     }
 
     if (convoyId) {
+      // Clean up trip stats
+      await tripStats.cleanupStats();
       await supabase
         .from("convoy_members")
         .delete()
