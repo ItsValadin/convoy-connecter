@@ -122,12 +122,15 @@ const Index = () => {
   const handleCenterOnMe = useCallback(() => {
     const self = drivers.find((d) => d.id === sessionId);
     if (self && mapInstanceRef.current) {
+      mapInstanceRef.current.stop(); // cancel any in-progress animation
       mapInstanceRef.current.flyTo([self.lat, self.lng], 19, { duration: 0.8 });
-      setFollowMode((prev) => !prev);
+      setFollowMode(true); // always enable, never toggle off
     } else if (mapInstanceRef.current && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
+          mapInstanceRef.current?.stop();
           mapInstanceRef.current?.flyTo([pos.coords.latitude, pos.coords.longitude], 19, { duration: 0.8 });
+          setFollowMode(true);
         },
         () => toast.error("Unable to get your location")
       );
@@ -141,7 +144,9 @@ const Index = () => {
     if (!followMode) return;
     const self = drivers.find((d) => d.id === sessionId);
     if (self && mapInstanceRef.current) {
-      mapInstanceRef.current.setView([self.lat, self.lng], mapInstanceRef.current.getZoom(), { animate: true, duration: 0.3 });
+      // Use panTo without animation to avoid conflicting with ongoing flyTo
+      // This fires on every driver position update, so smooth animation isn't needed
+      mapInstanceRef.current.panTo([self.lat, self.lng], { animate: false });
     }
   }, [followMode, drivers, sessionId]);
 
