@@ -136,13 +136,23 @@ const Index = () => {
     }
   }, [drivers, sessionId]);
 
-  // Follow mode: track user position continuously (north-up, no rotation)
+  // Follow mode: track user position continuously with heading rotation
   useEffect(() => {
     if (!followMode) return;
     const self = drivers.find((d) => d.id === sessionId);
     if (self && mapInstanceRef.current) {
       mapInstanceRef.current.setView([self.lat, self.lng], mapInstanceRef.current.getZoom(), { animate: true, duration: 0.3 });
     }
+  }, [followMode, drivers, sessionId]);
+
+  // Compute bearing for map rotation in follow mode
+  const mapBearing = useMemo(() => {
+    if (!followMode) return null;
+    const self = drivers.find((d) => d.id === sessionId);
+    if (self && typeof self.heading === "number" && self.heading >= 0) {
+      return self.heading;
+    }
+    return null;
   }, [followMode, drivers, sessionId]);
 
   // Disable follow mode on user drag
@@ -352,6 +362,7 @@ const Index = () => {
         hazards={mappedHazards}
         isLeader={isLeader}
         mapTheme={mapTheme}
+        bearing={mapBearing}
         onMapReady={handleMapReady}
         onMapClick={stableOnMapClick}
         onHazardClick={handleHazardClick}
