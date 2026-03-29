@@ -286,12 +286,14 @@ const TripStats = () => {
           </>
         )}
 
-        {/* Loading state for selected trip with no stats yet */}
-        {hasTripSelected && stats.length === 0 && selectedTrip?.convoyId === activeConvoyId && (
+        {/* Empty state for selected trip with no stats */}
+        {hasTripSelected && stats.length === 0 && (
           <div className="text-center py-16">
             <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <p className="font-display text-muted-foreground">
-              No stats yet — start driving!
+              {selectedTrip?.convoyId === activeConvoyId
+                ? "No stats yet — start driving!"
+                : "No stats recorded for this trip"}
             </p>
           </div>
         )}
