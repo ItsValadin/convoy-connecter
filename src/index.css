@@ -115,3 +115,8 @@
 .leaflet-container {
   will-change: transform;
 }
+
+/* Push zoom controls above the bottom tab bar */
+.leaflet-bottom.leaflet-right {
+  bottom: 4.5rem;
+}
