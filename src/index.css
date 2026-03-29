@@ -116,14 +116,19 @@
   will-change: transform;
 }
 
-/* Align zoom controls with action buttons and keep above tab bar */
+/* Align zoom controls with action buttons and keep clear of overlays */
 .leaflet-bottom.leaflet-right {
-  bottom: 5.5rem;
   right: 0.5rem;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 8rem);
+}
+
+.leaflet-bottom.leaflet-right .leaflet-control {
+  margin-bottom: 0;
 }
 
 @media (min-width: 640px) {
   .leaflet-bottom.leaflet-right {
     right: 1rem;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 6rem);
   }
 }
