@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Gauge, TrendingUp, TrendingDown, Activity, Crown, History } from "lucide-react";
+import { Gauge, TrendingUp, TrendingDown, Activity, Crown, History, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import BottomTabBar from "@/components/BottomTabBar";
 
