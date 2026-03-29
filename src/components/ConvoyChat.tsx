@@ -118,7 +118,7 @@ const ConvoyChat = ({ convoyId, sessionId, senderName, senderColor }: ConvoyChat
   }
 
   return (
-    <div className="absolute bottom-14 left-2 sm:left-4 z-20 w-[min(20rem,calc(100vw-1rem))] max-h-[60vh] sm:max-h-96 bg-card/95 backdrop-blur-xl border border-border rounded-xl overflow-hidden flex flex-col">
+    <div className="absolute bottom-20 left-2 sm:left-4 z-20 w-[min(20rem,calc(100vw-1rem))] max-h-[60vh] sm:max-h-96 bg-card/95 backdrop-blur-xl border border-border rounded-xl overflow-hidden flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-border">
         <div className="flex items-center gap-2">
