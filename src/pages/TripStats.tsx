@@ -128,7 +128,7 @@ const TripStats = () => {
             </p>
           </div>
           {/* Back to list button when viewing a trip */}
-          {hasTripSelected && stats.length > 0 && trips.length > 0 && (
+          {hasTripSelected && (
             <button
               onClick={() => setSelectedTrip(null)}
               className="px-3 py-1.5 rounded-lg border border-border bg-secondary/40 font-display text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors"
