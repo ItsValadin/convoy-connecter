@@ -152,6 +152,56 @@ export type Database = {
           },
         ]
       }
+      convoy_trip_stats: {
+        Row: {
+          avg_speed: number
+          convoy_id: string
+          created_at: string
+          driver_color: string
+          driver_name: string
+          fastest_acceleration: number
+          hardest_brake: number
+          id: string
+          session_id: string
+          top_speed: number
+          updated_at: string
+        }
+        Insert: {
+          avg_speed?: number
+          convoy_id: string
+          created_at?: string
+          driver_color?: string
+          driver_name: string
+          fastest_acceleration?: number
+          hardest_brake?: number
+          id?: string
+          session_id: string
+          top_speed?: number
+          updated_at?: string
+        }
+        Update: {
+          avg_speed?: number
+          convoy_id?: string
+          created_at?: string
+          driver_color?: string
+          driver_name?: string
+          fastest_acceleration?: number
+          hardest_brake?: number
+          id?: string
+          session_id?: string
+          top_speed?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "convoy_trip_stats_convoy_id_fkey"
+            columns: ["convoy_id"]
+            isOneToOne: false
+            referencedRelation: "convoys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       convoys: {
         Row: {
           code: string

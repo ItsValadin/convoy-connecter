@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { RealtimeChannel } from "@supabase/supabase-js";
 import { useBackgroundGeolocation } from "@/hooks/useBackgroundGeolocation";
+import { useTripStats } from "@/hooks/useTripStats";
 
 export interface Driver {
   id: string;
@@ -73,12 +74,16 @@ export const useConvoy = (initialCenter: [number, number]) => {
   const sessionIdRef = useRef(savedSession?.sessionId || generateSessionId());
   const hasAttemptedRejoinRef = useRef(false);
   const bgGeo = useBackgroundGeolocation();
+  const selfNameRef = useRef(savedSession?.name || "");
+  const selfColorRef = useRef(savedSession?.color || "#22c55e");
   const channelRef = useRef<RealtimeChannel | null>(null);
   const positionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const dbIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const latestPositionRef = useRef<{ lat: number; lng: number; speed: number | null; heading: number | null }>({
     lat: initialCenter[0], lng: initialCenter[1], speed: null, heading: null,
   });
+
+  const tripStats = useTripStats(convoyId, sessionIdRef.current, selfNameRef.current, selfColorRef.current);
 
   // Fetch destination from convoy record
   const fetchDestination = async (cId: string) => {
@@ -297,6 +302,7 @@ export const useConvoy = (initialCenter: [number, number]) => {
       onPosition: ({ latitude, longitude, speed, heading }) => {
         setGpsActive(true);
         latestPositionRef.current = { lat: latitude, lng: longitude, speed, heading };
+        tripStats.recordSpeed(speed);
         const now = performance.now();
         if (now - lastDriversUpdate < 250) return;
         lastDriversUpdate = now;
@@ -355,6 +361,9 @@ export const useConvoy = (initialCenter: [number, number]) => {
     setConvoyCode(code);
     setConvoyId(convoy.id);
     setIsLeader(true);
+    selfNameRef.current = name;
+    selfColorRef.current = DRIVER_COLORS[colorIdx];
+    tripStats.resetStats();
     saveSession({ convoyId: convoy.id, convoyCode: code, sessionId: sessionIdRef.current, name, color: DRIVER_COLORS[colorIdx], isLeader: true });
     await fetchMembers(convoy.id);
     subscribeToConvoy(convoy.id);
@@ -405,6 +414,9 @@ export const useConvoy = (initialCenter: [number, number]) => {
     setConvoyCode(code.toUpperCase());
     setConvoyId(convoy.id);
     setIsLeader(false);
+    selfNameRef.current = name;
+    selfColorRef.current = DRIVER_COLORS[colorIdx];
+    tripStats.resetStats();
     saveSession({ convoyId: convoy.id, convoyCode: code.toUpperCase(), sessionId: sessionIdRef.current, name, color: DRIVER_COLORS[colorIdx], isLeader: false });
     await fetchMembers(convoy.id);
     await fetchDestination(convoy.id);
@@ -454,6 +466,8 @@ export const useConvoy = (initialCenter: [number, number]) => {
     }
 
     if (convoyId) {
+      // Clean up trip stats
+      await tripStats.cleanupStats();
       await supabase
         .from("convoy_members")
         .delete()
