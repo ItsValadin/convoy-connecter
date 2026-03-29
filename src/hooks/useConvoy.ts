@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { RealtimeChannel } from "@supabase/supabase-js";
 import { useBackgroundGeolocation } from "@/hooks/useBackgroundGeolocation";
+import { useTripStats } from "@/hooks/useTripStats";
 
 export interface Driver {
   id: string;
