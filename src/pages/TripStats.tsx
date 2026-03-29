@@ -108,7 +108,6 @@ const TripStats = () => {
   };
 
   const hasTripSelected = selectedTrip !== null;
-  const showTripList = !hasTripSelected || (stats.length === 0 && !activeConvoyId);
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-16">
