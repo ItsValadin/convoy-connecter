@@ -116,7 +116,14 @@
   will-change: transform;
 }
 
-/* Push zoom controls above the bottom tab bar */
+/* Align zoom controls with action buttons and keep above tab bar */
 .leaflet-bottom.leaflet-right {
-  bottom: 4.5rem;
+  bottom: 5.5rem;
+  right: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .leaflet-bottom.leaflet-right {
+    right: 1rem;
+  }
 }
