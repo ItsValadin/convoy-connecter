@@ -119,7 +119,7 @@
 /* Align zoom controls with action buttons and keep clear of overlays */
 .leaflet-bottom.leaflet-right {
   right: 0.5rem;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 8rem);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 6rem);
 }
 
 .leaflet-bottom.leaflet-right .leaflet-control {
