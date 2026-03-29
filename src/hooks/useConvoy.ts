@@ -74,12 +74,16 @@ export const useConvoy = (initialCenter: [number, number]) => {
   const sessionIdRef = useRef(savedSession?.sessionId || generateSessionId());
   const hasAttemptedRejoinRef = useRef(false);
   const bgGeo = useBackgroundGeolocation();
+  const selfNameRef = useRef(savedSession?.name || "");
+  const selfColorRef = useRef(savedSession?.color || "#22c55e");
   const channelRef = useRef<RealtimeChannel | null>(null);
   const positionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const dbIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const latestPositionRef = useRef<{ lat: number; lng: number; speed: number | null; heading: number | null }>({
     lat: initialCenter[0], lng: initialCenter[1], speed: null, heading: null,
   });
+
+  const tripStats = useTripStats(convoyId, sessionIdRef.current, selfNameRef.current, selfColorRef.current);
 
   // Fetch destination from convoy record
   const fetchDestination = async (cId: string) => {
