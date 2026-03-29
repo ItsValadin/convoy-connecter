@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, Copy, Plus, LogIn, Navigation, Crown, Circle, LogOut, ChevronLeft, ChevronRight, MapPin, BarChart3 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Users, Copy, Plus, LogIn, Navigation, Crown, Circle, LogOut, ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -46,7 +45,6 @@ const formatDistance = (km: number): string => {
 };
 
 const ConvoyPanel = ({ drivers, convoyCode, destination, onCreateConvoy, onJoinConvoy, onLeaveConvoy, onDriverClick }: ConvoyPanelProps) => {
-  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [mode, setMode] = useState<"idle" | "create" | "join">("idle");
@@ -165,13 +163,6 @@ const ConvoyPanel = ({ drivers, convoyCode, destination, onCreateConvoy, onJoinC
                 })}
               </div>
             </div>
-            <Button
-              variant="outline"
-              className="w-full border-primary/30 text-primary hover:bg-primary/10 font-display"
-              onClick={() => navigate("/stats")}
-            >
-              <BarChart3 className="w-4 h-4 mr-2" /> Trip Stats
-            </Button>
             <Button
               variant="outline"
               className="w-full border-destructive/50 text-destructive hover:bg-destructive/10 font-display"
