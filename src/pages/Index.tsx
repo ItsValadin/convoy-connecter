@@ -448,7 +448,7 @@ const Index = () => {
             </div>
           </div>
       )}
-      <div className="absolute bottom-44 right-2 sm:bottom-36 sm:right-4 z-10 flex flex-col gap-2">
+      <div className="absolute bottom-52 right-2 sm:bottom-36 sm:right-4 z-10 flex flex-col gap-2">
         {convoyCode && (
           <div className="relative">
             <Button
@@ -503,7 +503,7 @@ const Index = () => {
 
       {/* Bottom status bar - positioned above tab bar */}
       {convoyCode && (
-        <div className="absolute bottom-14 left-1/2 -translate-x-1/2 z-10 bg-card/90 backdrop-blur-xl border border-border rounded-full px-3 sm:px-5 py-2 sm:py-2.5 flex items-center gap-2 sm:gap-4 max-w-[90vw]">
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10 bg-card/90 backdrop-blur-xl border border-border rounded-full px-3 sm:px-5 py-2 sm:py-2.5 flex items-center gap-2 sm:gap-4 max-w-[90vw]">
           <div className={`w-2 h-2 rounded-full ${gpsActive ? "bg-primary" : "bg-convoy-amber"} animate-pulse`} />
           <span className="font-display text-xs text-muted-foreground">
             {gpsActive ? "GPS LIVE" : "GPS PENDING"} • {drivers.length} vehicles tracked
@@ -512,7 +512,7 @@ const Index = () => {
       )}
       {/* Install PWA banner */}
       {showInstallBanner && (
-        <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-sm animate-in slide-in-from-bottom-4 fade-in duration-500">
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-sm animate-in slide-in-from-bottom-4 fade-in duration-500">
           <div className="bg-card/95 backdrop-blur-xl border border-primary/30 rounded-xl px-4 py-3 flex items-center gap-3 shadow-lg">
             <Download className="w-5 h-5 text-primary shrink-0" />
             <div className="flex-1 min-w-0">

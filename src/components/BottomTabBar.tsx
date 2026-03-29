@@ -8,8 +8,8 @@ const BottomTabBar = () => {
   const isHome = location.pathname === "/";
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 safe-bottom">
-      <div className="bg-card/95 backdrop-blur-xl border-t border-border flex items-stretch">
+    <div className="fixed bottom-0 left-0 right-0 z-50">
+      <div className="bg-card/95 backdrop-blur-xl border-t border-border flex items-stretch pb-[env(safe-area-inset-bottom,0px)]">
         <button
           onClick={() => navigate("/")}
           className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-colors ${
