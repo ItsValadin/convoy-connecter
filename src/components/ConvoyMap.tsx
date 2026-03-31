@@ -50,7 +50,6 @@ interface ConvoyMapProps {
   hazards?: HazardPin[];
   isLeader?: boolean;
   mapTheme?: MapTheme;
-  bearing?: number | null;
   onMapReady?: (map: L.Map) => void;
   onMapClick?: (lat: number, lng: number) => void;
   onHazardClick?: (hazardId: string) => void;
