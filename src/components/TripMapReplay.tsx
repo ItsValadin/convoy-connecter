@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import L from "leaflet";
 import { MapContainer, TileLayer, Polyline, CircleMarker, useMap } from "react-leaflet";
 import { supabase } from "@/integrations/supabase/client";
 import { Play, Pause, RotateCcw } from "lucide-react";
