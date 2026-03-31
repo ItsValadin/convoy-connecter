@@ -192,7 +192,7 @@ const ConvoyMap = React.memo(({ drivers, center, destination, routeCoordinates, 
     tileLayerRef.current.remove();
     tileLayerRef.current = L.tileLayer(TILE_URLS[mapTheme], {
       maxZoom: 19,
-      className: mapTheme === "dark" ? "map-tiles-lighter" : "",
+      className: mapTheme === "dark" ? "map-tiles-lighter" : "map-tiles-darker",
     }).addTo(mapRef.current);
   }, [mapTheme]);
 
