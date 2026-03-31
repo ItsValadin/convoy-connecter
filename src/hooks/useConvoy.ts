@@ -302,7 +302,7 @@ export const useConvoy = (initialCenter: [number, number]) => {
       onPosition: ({ latitude, longitude, speed, heading }) => {
         setGpsActive(true);
         latestPositionRef.current = { lat: latitude, lng: longitude, speed, heading };
-        tripStats.recordSpeed(speed);
+        tripStats.recordPosition(latitude, longitude, speed);
         const now = performance.now();
         if (now - lastDriversUpdate < 250) return;
         lastDriversUpdate = now;
