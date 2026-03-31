@@ -60,6 +60,18 @@ const loadSession = (): SavedSession | null => {
 
 const generateSessionId = () => crypto.randomUUID();
 
+/** Try to get a fresh GPS position (timeout 3s), returns null on failure */
+const getFreshPosition = (): Promise<{ lat: number; lng: number } | null> =>
+  new Promise((resolve) => {
+    if (!navigator.geolocation) return resolve(null);
+    const timer = setTimeout(() => resolve(null), 3000);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { clearTimeout(timer); resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }); },
+      () => { clearTimeout(timer); resolve(null); },
+      { enableHighAccuracy: true, timeout: 3000, maximumAge: 5000 }
+    );
+  });
+
 export const useConvoy = (initialCenter: [number, number]) => {
   const [convoyCode, setConvoyCode] = useState<string | null>(null);
   const [convoyId, setConvoyId] = useState<string | null>(null);
