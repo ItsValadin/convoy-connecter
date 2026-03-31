@@ -1,16 +1,7 @@
 import React, { useEffect, useRef, useCallback } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-
-interface AnimationState {
-  fromLat: number;
-  fromLng: number;
-  toLat: number;
-  toLng: number;
-  startTime: number;
-  duration: number;
-  rafId: number | null;
-}
+import { SmoothMovementEngine, type SmoothedState } from "@/lib/smoothMovement";
 
 interface Driver {
   id: string;
@@ -64,10 +55,8 @@ const createDriverIcon = (color: string, isLeader: boolean, speed?: number | nul
 
   const ring = isLeader ? `<circle cx="30" cy="30" r="18" fill="none" stroke="${color}" stroke-width="2" opacity="0.4"><animate attributeName="r" from="14" to="22" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" from="0.5" to="0" dur="2s" repeatCount="indefinite"/></circle>` : "";
 
-  // Heading arrow (triangle pointing up, rotated by heading)
   const headingArrow = hasHeading ? `<g transform="rotate(${rotation}, 30, 30)"><polygon points="30,4 36,16 24,16" fill="${color}" opacity="0.85"/></g>` : "";
 
-  // Speed label
   const speedLabel = speedKmh !== null ? `<text x="30" y="52" text-anchor="middle" font-family="monospace" font-size="9" font-weight="bold" fill="${color}">${speedKmh} km/h</text>` : "";
 
   const svg = `<svg width="60" height="58" viewBox="0 0 60 58" xmlns="http://www.w3.org/2000/svg">
@@ -132,17 +121,17 @@ const createHazardIcon = (hazardType: string) => {
   });
 };
 
-const LERP_DURATION = 1500; // 1.5 second smooth interpolation
-
 const TILE_URLS: Record<MapTheme, string> = {
   dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
   light: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
 };
 
+// Throttle icon updates to avoid excessive DOM churn
+const ICON_UPDATE_INTERVAL_MS = 300;
+
 const ConvoyMap = React.memo(({ drivers, center, destination, routeCoordinates, hazards = [], isLeader, mapTheme = "dark", onMapReady, onMapClick, onHazardClick }: ConvoyMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
-  const animationsRef = useRef<Map<string, AnimationState>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
   const polylineRef = useRef<L.Polyline | null>(null);
   const routePolylineRef = useRef<L.Polyline | null>(null);
@@ -153,6 +142,43 @@ const ConvoyMap = React.memo(({ drivers, center, destination, routeCoordinates, 
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const onMapClickRef = useRef(onMapClick);
   onMapClickRef.current = onMapClick;
+
+  // Track driver metadata for icon updates
+  const driverMetaRef = useRef<Map<string, { color: string; isLeader: boolean; name: string }>>(new Map());
+  const lastIconUpdateRef = useRef<Map<string, number>>(new Map());
+
+  // Smooth movement engine
+  const engineRef = useRef<SmoothMovementEngine | null>(null);
+
+  // Initialize engine with marker update callback
+  useEffect(() => {
+    const engine = new SmoothMovementEngine((id: string, state: SmoothedState) => {
+      const marker = markersRef.current.get(id);
+      if (!marker) return;
+
+      // Update position smoothly
+      marker.setLatLng([state.lat, state.lng]);
+
+      // Throttle icon updates (SVG recreation is expensive)
+      const now = performance.now();
+      const lastUpdate = lastIconUpdateRef.current.get(id) || 0;
+      if (now - lastUpdate > ICON_UPDATE_INTERVAL_MS) {
+        const meta = driverMetaRef.current.get(id);
+        if (meta) {
+          marker.setIcon(createDriverIcon(meta.color, meta.isLeader, state.speed, state.heading));
+        }
+        lastIconUpdateRef.current.set(id, now);
+      }
+    });
+    engineRef.current = engine;
+
+    return () => {
+      engine.destroy();
+      engineRef.current = null;
+    };
+  }, []);
+
+  // Initialize map
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
@@ -169,7 +195,7 @@ const ConvoyMap = React.memo(({ drivers, center, destination, routeCoordinates, 
     }).addTo(mapRef.current);
 
     L.control.zoom({ position: "bottomright" }).addTo(mapRef.current);
-    
+
     mapRef.current.on("contextmenu", (e: L.LeafletMouseEvent) => {
       onMapClickRef.current?.(e.latlng.lat, e.latlng.lng);
     });
@@ -177,10 +203,6 @@ const ConvoyMap = React.memo(({ drivers, center, destination, routeCoordinates, 
     onMapReady?.(mapRef.current);
 
     return () => {
-      animationsRef.current.forEach((anim) => {
-        if (anim.rafId) cancelAnimationFrame(anim.rafId);
-      });
-      animationsRef.current.clear();
       mapRef.current?.remove();
       mapRef.current = null;
     };
@@ -196,52 +218,24 @@ const ConvoyMap = React.memo(({ drivers, center, destination, routeCoordinates, 
     }).addTo(mapRef.current);
   }, [mapTheme]);
 
-  const animateMarker = useCallback((id: string, marker: L.Marker, toLat: number, toLng: number) => {
-    const existing = animationsRef.current.get(id);
-    if (existing?.rafId) cancelAnimationFrame(existing.rafId);
-
-    const currentPos = marker.getLatLng();
-    const state: AnimationState = {
-      fromLat: currentPos.lat,
-      fromLng: currentPos.lng,
-      toLat,
-      toLng,
-      startTime: performance.now(),
-      duration: LERP_DURATION,
-      rafId: null,
-    };
-
-    const step = (now: number) => {
-      const t = Math.min((now - state.startTime) / state.duration, 1);
-      // Ease-out cubic for natural deceleration
-      const eased = 1 - Math.pow(1 - t, 3);
-      const lat = state.fromLat + (state.toLat - state.fromLat) * eased;
-      const lng = state.fromLng + (state.toLng - state.fromLng) * eased;
-      marker.setLatLng([lat, lng]);
-
-      if (t < 1) {
-        state.rafId = requestAnimationFrame(step);
-      } else {
-        animationsRef.current.delete(id);
-      }
-    };
-
-    state.rafId = requestAnimationFrame(step);
-    animationsRef.current.set(id, state);
-  }, []);
-
+  // Feed driver updates to smooth engine & manage markers
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!mapRef.current || !engineRef.current) return;
+    const engine = engineRef.current;
 
-    // Update or create markers
     drivers.forEach((driver) => {
-      const existing = markersRef.current.get(driver.id);
-      if (existing) {
-        // Animate position smoothly instead of jumping
-        animateMarker(driver.id, existing, driver.lat, driver.lng);
-        existing.setIcon(createDriverIcon(driver.color, driver.isLeader, driver.speed, driver.heading));
-        existing.setTooltipContent(driver.name);
-      } else {
+      // Store metadata for icon creation
+      driverMetaRef.current.set(driver.id, {
+        color: driver.color,
+        isLeader: driver.isLeader,
+        name: driver.name,
+      });
+
+      // Feed raw GPS to smooth engine
+      engine.updateDriver(driver.id, driver.lat, driver.lng, driver.heading, driver.speed);
+
+      // Create marker if new
+      if (!markersRef.current.has(driver.id)) {
         const marker = L.marker([driver.lat, driver.lng], {
           icon: createDriverIcon(driver.color, driver.isLeader, driver.speed, driver.heading),
         })
@@ -253,6 +247,9 @@ const ConvoyMap = React.memo(({ drivers, center, destination, routeCoordinates, 
           })
           .addTo(mapRef.current!);
         markersRef.current.set(driver.id, marker);
+      } else {
+        // Update tooltip if name changed
+        markersRef.current.get(driver.id)!.setTooltipContent(driver.name);
       }
     });
 
@@ -260,20 +257,25 @@ const ConvoyMap = React.memo(({ drivers, center, destination, routeCoordinates, 
     const currentIds = new Set(drivers.map((d) => d.id));
     markersRef.current.forEach((marker, id) => {
       if (!currentIds.has(id)) {
-        const anim = animationsRef.current.get(id);
-        if (anim?.rafId) cancelAnimationFrame(anim.rafId);
-        animationsRef.current.delete(id);
+        engine.removeDriver(id);
+        driverMetaRef.current.delete(id);
+        lastIconUpdateRef.current.delete(id);
         mapRef.current!.removeLayer(marker);
         markersRef.current.delete(id);
       }
     });
 
-    // Draw route line between drivers
+    // Draw route line between drivers (use smoothed positions)
     if (polylineRef.current) {
       mapRef.current.removeLayer(polylineRef.current);
     }
     if (drivers.length > 1) {
-      const latlngs = drivers.map((d) => [d.lat, d.lng] as [number, number]);
+      const latlngs = drivers.map((d) => {
+        const smoothed = engine.getState(d.id);
+        return smoothed
+          ? [smoothed.lat, smoothed.lng] as [number, number]
+          : [d.lat, d.lng] as [number, number];
+      });
       polylineRef.current = L.polyline(latlngs, {
         color: "#22c55e",
         weight: 2,
@@ -281,17 +283,15 @@ const ConvoyMap = React.memo(({ drivers, center, destination, routeCoordinates, 
         dashArray: "8 8",
       }).addTo(mapRef.current);
     }
-  }, [drivers, animateMarker]);
+  }, [drivers]);
 
   // Destination marker
   useEffect(() => {
     if (!mapRef.current) return;
-
     if (destinationMarkerRef.current) {
       mapRef.current.removeLayer(destinationMarkerRef.current);
       destinationMarkerRef.current = null;
     }
-
     if (destination) {
       destinationMarkerRef.current = L.marker([destination.lat, destination.lng], {
         icon: createDestinationIcon(),
@@ -309,12 +309,10 @@ const ConvoyMap = React.memo(({ drivers, center, destination, routeCoordinates, 
   // Route polyline
   useEffect(() => {
     if (!mapRef.current) return;
-
     if (routePolylineRef.current) {
       mapRef.current.removeLayer(routePolylineRef.current);
       routePolylineRef.current = null;
     }
-
     if (routeCoordinates && routeCoordinates.length > 1) {
       routePolylineRef.current = L.polyline(routeCoordinates, {
         color: "#22c55e",
@@ -328,18 +326,13 @@ const ConvoyMap = React.memo(({ drivers, center, destination, routeCoordinates, 
   // Hazard markers
   useEffect(() => {
     if (!mapRef.current) return;
-
     const currentIds = new Set(hazards.map((h) => h.id));
-
-    // Remove markers no longer present
     hazardMarkersRef.current.forEach((marker, id) => {
       if (!currentIds.has(id)) {
         mapRef.current!.removeLayer(marker);
         hazardMarkersRef.current.delete(id);
       }
     });
-
-    // Add new markers
     hazards.forEach((hazard) => {
       if (!hazardMarkersRef.current.has(hazard.id)) {
         const age = Date.now() - new Date(hazard.createdAt).getTime();
@@ -359,7 +352,6 @@ const ConvoyMap = React.memo(({ drivers, center, destination, routeCoordinates, 
       }
     });
   }, [hazards]);
-
 
   return (
     <>
