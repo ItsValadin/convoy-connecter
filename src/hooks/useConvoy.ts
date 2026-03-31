@@ -350,6 +350,12 @@ export const useConvoy = (initialCenter: [number, number]) => {
       return;
     }
 
+    // Get fresh GPS position to avoid inserting default/stale coordinates
+    const freshPos = await getFreshPosition();
+    if (freshPos) {
+      latestPositionRef.current = { ...latestPositionRef.current, lat: freshPos.lat, lng: freshPos.lng };
+    }
+
     // Add self as leader
     const colorIdx = 0;
     const { error: memberError } = await supabase
