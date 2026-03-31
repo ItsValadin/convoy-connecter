@@ -7,6 +7,7 @@ import Index from "./pages/Index.tsx";
 import Install from "./pages/Install.tsx";
 import TripStats from "./pages/TripStats.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import { ConvoyProvider } from "./contexts/ConvoyContext.tsx";
 
 const queryClient = new QueryClient();
 
@@ -16,13 +17,15 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/install" element={<Install />} />
-          <Route path="/stats" element={<TripStats />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <ConvoyProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/install" element={<Install />} />
+            <Route path="/stats" element={<TripStats />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </ConvoyProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
