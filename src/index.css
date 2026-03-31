@@ -108,7 +108,12 @@
 
 /* Lighten CartoDB dark tiles so roads are more visible */
 .map-tiles-lighter {
-  filter: brightness(1.6) contrast(0.9);
+  filter: brightness(1.9) contrast(0.85);
+}
+
+/* Darken Voyager light tiles so roads stand out more */
+.map-tiles-darker {
+  filter: brightness(0.85) contrast(1.2) saturate(0.7);
 }
 
 /* Promote map to own compositor layer for smoother panning */
