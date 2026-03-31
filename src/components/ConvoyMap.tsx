@@ -360,36 +360,6 @@ const ConvoyMap = React.memo(({ drivers, center, destination, routeCoordinates, 
     });
   }, [hazards]);
 
-  // Apply bearing rotation to map container
-  // Scale up by √2 (~1.42) so the rotated rectangle always covers the viewport
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const rotation = typeof bearing === "number" ? -bearing : 0;
-    const scale = rotation !== 0 ? 1.42 : 1;
-    containerRef.current.style.transform = `rotate(${rotation}deg) scale(${scale})`;
-    containerRef.current.style.transition = "transform 0.5s ease-out";
-  }, [bearing]);
-
-  // Counter-rotate markers so they stay upright
-  useEffect(() => {
-    if (!mapRef.current) return;
-    const counterRotation = typeof bearing === "number" ? bearing : 0;
-    // Counter-rotate all marker icons
-    const markerEls = document.querySelectorAll<HTMLElement>(".convoy-marker");
-    markerEls.forEach((el) => {
-      el.style.transform = `rotate(${counterRotation}deg)`;
-    });
-    // Counter-rotate tooltips
-    const tooltipEls = document.querySelectorAll<HTMLElement>(".leaflet-tooltip");
-    tooltipEls.forEach((el) => {
-      el.style.transform = `rotate(${counterRotation}deg)`;
-    });
-    // Counter-rotate zoom controls
-    const controlEls = document.querySelectorAll<HTMLElement>(".leaflet-control-zoom");
-    controlEls.forEach((el) => {
-      el.style.transform = `rotate(${counterRotation}deg)`;
-    });
-  }, [bearing, drivers, hazards, destination]);
 
   return (
     <>
