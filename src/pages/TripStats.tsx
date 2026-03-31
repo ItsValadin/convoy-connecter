@@ -183,7 +183,7 @@ const TripStats = () => {
                   {trips.map((trip) => (
                     <button
                       key={trip.convoyId + trip.timestamp}
-                      onClick={() => setSelectedTrip(trip)}
+                      onClick={() => gateAction(() => setSelectedTrip(trip))}
                       className="w-full text-left bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:border-primary/30 transition-colors"
                     >
                       <div className="w-9 h-9 rounded-lg bg-secondary/60 flex items-center justify-center shrink-0">
