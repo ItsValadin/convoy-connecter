@@ -411,6 +411,12 @@ export const useConvoy = (initialCenter: [number, number]) => {
 
     const colorIdx = Math.min((count || 0), DRIVER_COLORS.length - 1);
 
+    // Get fresh GPS position to avoid inserting default/stale coordinates
+    const freshPos = await getFreshPosition();
+    if (freshPos) {
+      latestPositionRef.current = { ...latestPositionRef.current, lat: freshPos.lat, lng: freshPos.lng };
+    }
+
     const { error: memberError } = await supabase
       .from("convoy_members")
       .insert({
