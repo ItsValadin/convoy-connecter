@@ -3,6 +3,8 @@ import { Gauge, TrendingUp, TrendingDown, Activity, Crown, History, BarChart3, R
 import { supabase } from "@/integrations/supabase/client";
 import BottomTabBar from "@/components/BottomTabBar";
 import TripMapReplay from "@/components/TripMapReplay";
+import AdInterstitial from "@/components/AdInterstitial";
+import { useAdGate } from "@/hooks/useAdGate";
 
 interface StatRow {
   sessionId: string;
@@ -49,6 +51,7 @@ const TripStats = () => {
   const [trips, setTrips] = useState<TripRecord[]>([]);
   const [selectedTrip, setSelectedTrip] = useState<TripRecord | null>(null);
   const [activeConvoyId, setActiveConvoyId] = useState<string | null>(null);
+  const { showingAd, gateAction, onAdComplete, onAdSkip } = useAdGate();
 
   useEffect(() => {
     const history = loadTripHistory();
@@ -180,7 +183,7 @@ const TripStats = () => {
                   {trips.map((trip) => (
                     <button
                       key={trip.convoyId + trip.timestamp}
-                      onClick={() => setSelectedTrip(trip)}
+                      onClick={() => gateAction(() => setSelectedTrip(trip))}
                       className="w-full text-left bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:border-primary/30 transition-colors"
                     >
                       <div className="w-9 h-9 rounded-lg bg-secondary/60 flex items-center justify-center shrink-0">
@@ -348,6 +351,8 @@ const TripStats = () => {
           </div>
         )}
       </div>
+
+      {showingAd && <AdInterstitial onComplete={onAdComplete} onSkip={onAdSkip} />}
 
       <BottomTabBar />
     </div>
