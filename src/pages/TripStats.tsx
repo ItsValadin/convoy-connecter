@@ -51,6 +51,7 @@ const TripStats = () => {
   const [trips, setTrips] = useState<TripRecord[]>([]);
   const [selectedTrip, setSelectedTrip] = useState<TripRecord | null>(null);
   const [activeConvoyId, setActiveConvoyId] = useState<string | null>(null);
+  const { showingAd, gateAction, onAdComplete, onAdSkip } = useAdGate();
 
   useEffect(() => {
     const history = loadTripHistory();
