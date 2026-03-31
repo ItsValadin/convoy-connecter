@@ -1,61 +1,49 @@
 
 
-## Trip Stats Page
+# Implement Google AdSense Interstitial Ads for Past Trip Stats
 
-### Overview
-Add a new "/stats" page showing real-time trip statistics for every driver in the convoy. Stats are computed client-side from GPS data and stored in a new database table so all convoy members can view each other's stats.
+## Overview
+Add a Google AdSense interstitial ad gate that shows before users can view **past** trip history, while keeping **live convoy stats** completely free.
 
-### Stats Tracked (per driver)
-- **Top Speed** — highest speed recorded during the trip
-- **Average Speed** — mean of all non-zero speed readings
-- **Fastest Acceleration** — largest positive speed delta between consecutive readings
-- **Hardest Brake** — largest negative speed delta between consecutive readings
+## How It Works
+1. User navigates to Stats page — sees trip list freely
+2. User taps a **past trip** (not the live convoy) → interstitial ad appears
+3. After ad closes (or after a timeout/skip), the trip stats load
+4. A sessionStorage flag prevents repeat ads within the same browser session (one ad per session)
+5. Tapping the **Live Convoy** card skips the ad entirely
 
-### Database Changes
-New `convoy_trip_stats` table:
+## Prerequisites (User Action Required)
+You'll need a Google AdSense account and an approved ad unit:
+1. Sign up at [adsense.google.com](https://adsense.google.com)
+2. Add your published domain (`convoy-connecter.lovable.app`) for verification
+3. Get your **publisher ID** (ca-pub-XXXXX) and create an ad unit
+4. Once approved, provide the publisher ID so it can be added to the app
 
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid | PK, default gen_random_uuid() |
-| convoy_id | uuid | FK to convoys |
-| session_id | text | identifies the driver |
-| driver_name | text | display name |
-| driver_color | text | marker color |
-| top_speed | double precision | m/s, default 0 |
-| avg_speed | double precision | m/s, default 0 |
-| fastest_acceleration | double precision | m/s², default 0 |
-| hardest_brake | double precision | m/s², default 0 |
-| updated_at | timestamptz | default now() |
-| created_at | timestamptz | default now() |
+## Technical Changes
 
-- Unique constraint on (convoy_id, session_id)
-- Public RLS policies (matching existing pattern)
-- Enable realtime so stats update live across devices
+### 1. Add AdSense script to `index.html`
+- Add the Google AdSense script tag in `<head>` with the user's publisher ID
 
-### Client-Side Changes
+### 2. Create `src/hooks/useAdGate.ts`
+- A hook that manages the ad interstitial state
+- Tracks whether ad has been shown this session (via `sessionStorage`)
+- Exposes `showAd()` → returns a Promise that resolves when ad completes
+- For development/testing: includes a mock mode that shows a 3-second countdown overlay instead of a real ad
 
-1. **`src/hooks/useTripStats.ts`** — New hook that:
-   - Tracks local speed history in a ref (previous speed + timestamp)
-   - On each GPS update, computes acceleration = (speed₂ - speed₁) / Δt
-   - Maintains running max/min/avg in refs
-   - Upserts stats to `convoy_trip_stats` every 5 seconds (same cadence as DB position persist)
-   - Subscribes to realtime changes on `convoy_trip_stats` filtered by convoy_id to display other drivers' stats
+### 3. Create `src/components/AdInterstitial.tsx`
+- Full-screen overlay component with a countdown timer (e.g., 5 seconds)
+- Shows the AdSense ad unit in the center
+- "Skip" button appears after the countdown
+- Styled to match the app's dark theme
 
-2. **`src/pages/TripStats.tsx`** — New page showing:
-   - Card per driver (colored by their convoy color)
-   - Four stat values displayed with icons, converted to mph for display
-   - Accessible from the convoy panel via a "Trip Stats" button
-   - Back button to return to map
+### 4. Modify `src/pages/TripStats.tsx`
+- When user clicks a **past trip** (not the active convoy), trigger the ad gate
+- Only show ad if not already shown this session
+- After ad completes/skips, proceed to load the selected trip stats
+- Live convoy card remains ad-free
 
-3. **`src/components/ConvoyPanel.tsx`** — Add a "Trip Stats" link/button visible when in an active convoy
-
-4. **`src/App.tsx`** — Add route `/stats`
-
-5. **`src/hooks/useConvoy.ts`** — Integrate `useTripStats` hook, calling its update method from the GPS `onPosition` callback. Reset stats on convoy join/create. Clean up stats record on leave.
-
-### Technical Notes
-- Speed from GPS is in m/s; display converts to mph (×2.237)
-- Acceleration is derived client-side: `(currentSpeed - previousSpeed) / timeDelta`
-- Stats persist to DB so they survive page refreshes and are visible to all members
-- Hardest brake is stored as a positive magnitude for display simplicity
+### Important Notes
+- **AdSense approval takes 1-2 days** — until then, the app will show a placeholder/mock ad
+- The publisher ID will be stored directly in the codebase (it's a public key, not a secret)
+- No database changes needed
 
