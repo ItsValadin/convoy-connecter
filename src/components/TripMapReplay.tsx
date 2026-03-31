@@ -29,14 +29,7 @@ const FitBounds = ({ routes }: { routes: DriverRoute[] }) => {
   useEffect(() => {
     const allPoints = routes.flatMap((r) => r.points.map((p) => [p.lat, p.lng] as [number, number]));
     if (allPoints.length > 1) {
-      const bounds = allPoints.reduce(
-        (b, p) => [
-          [Math.min(b[0][0], p[0]), Math.min(b[0][1], p[1])],
-          [Math.max(b[1][0], p[0]), Math.max(b[1][1], p[1])],
-        ],
-        [[90, 180], [-90, -180]] as [[number, number], [number, number]]
-      );
-      map.fitBounds(bounds, { padding: [30, 30] });
+      map.fitBounds(L.latLngBounds(allPoints.map(p => L.latLng(p[0], p[1]))), { padding: [30, 30] });
     } else if (allPoints.length === 1) {
       map.setView(allPoints[0], 14);
     }
