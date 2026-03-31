@@ -50,7 +50,6 @@ interface ConvoyMapProps {
   hazards?: HazardPin[];
   isLeader?: boolean;
   mapTheme?: MapTheme;
-  bearing?: number | null;
   onMapReady?: (map: L.Map) => void;
   onMapClick?: (lat: number, lng: number) => void;
   onHazardClick?: (hazardId: string) => void;
@@ -133,14 +132,14 @@ const createHazardIcon = (hazardType: string) => {
   });
 };
 
-const LERP_DURATION = 1000; // 1 second interpolation
+const LERP_DURATION = 1500; // 1.5 second smooth interpolation
 
 const TILE_URLS: Record<MapTheme, string> = {
   dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
   light: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
 };
 
-const ConvoyMap = React.memo(({ drivers, center, destination, routeCoordinates, hazards = [], isLeader, mapTheme = "dark", bearing = null, onMapReady, onMapClick, onHazardClick }: ConvoyMapProps) => {
+const ConvoyMap = React.memo(({ drivers, center, destination, routeCoordinates, hazards = [], isLeader, mapTheme = "dark", onMapReady, onMapClick, onHazardClick }: ConvoyMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const animationsRef = useRef<Map<string, AnimationState>>(new Map());
@@ -361,36 +360,6 @@ const ConvoyMap = React.memo(({ drivers, center, destination, routeCoordinates, 
     });
   }, [hazards]);
 
-  // Apply bearing rotation to map container
-  // Scale up by √2 (~1.42) so the rotated rectangle always covers the viewport
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const rotation = typeof bearing === "number" ? -bearing : 0;
-    const scale = rotation !== 0 ? 1.42 : 1;
-    containerRef.current.style.transform = `rotate(${rotation}deg) scale(${scale})`;
-    containerRef.current.style.transition = "transform 0.5s ease-out";
-  }, [bearing]);
-
-  // Counter-rotate markers so they stay upright
-  useEffect(() => {
-    if (!mapRef.current) return;
-    const counterRotation = typeof bearing === "number" ? bearing : 0;
-    // Counter-rotate all marker icons
-    const markerEls = document.querySelectorAll<HTMLElement>(".convoy-marker");
-    markerEls.forEach((el) => {
-      el.style.transform = `rotate(${counterRotation}deg)`;
-    });
-    // Counter-rotate tooltips
-    const tooltipEls = document.querySelectorAll<HTMLElement>(".leaflet-tooltip");
-    tooltipEls.forEach((el) => {
-      el.style.transform = `rotate(${counterRotation}deg)`;
-    });
-    // Counter-rotate zoom controls
-    const controlEls = document.querySelectorAll<HTMLElement>(".leaflet-control-zoom");
-    controlEls.forEach((el) => {
-      el.style.transform = `rotate(${counterRotation}deg)`;
-    });
-  }, [bearing, drivers, hazards, destination]);
 
   return (
     <>

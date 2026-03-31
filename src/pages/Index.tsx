@@ -148,15 +148,6 @@ const Index = () => {
     }
   }, [followMode, drivers, sessionId]);
 
-  // Compute bearing for map rotation in follow mode
-  const mapBearing = useMemo(() => {
-    if (!followMode) return null;
-    const self = drivers.find((d) => d.id === sessionId);
-    if (self && typeof self.heading === "number" && self.heading >= 0) {
-      return self.heading;
-    }
-    return null;
-  }, [followMode, drivers, sessionId]);
 
   // Disable follow mode on user drag
   useEffect(() => {
@@ -365,7 +356,7 @@ const Index = () => {
         hazards={mappedHazards}
         isLeader={isLeader}
         mapTheme={mapTheme}
-        bearing={mapBearing}
+        
         onMapReady={handleMapReady}
         onMapClick={stableOnMapClick}
         onHazardClick={handleHazardClick}
