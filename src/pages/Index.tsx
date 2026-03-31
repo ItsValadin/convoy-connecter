@@ -16,12 +16,10 @@ import { toast } from "sonner";
 import BottomTabBar from "@/components/BottomTabBar";
 import { Crosshair, Volume2, VolumeX, Navigation, Clock, Gauge, Download, X, Sun, Moon, RotateCw, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useConvoy } from "@/hooks/useConvoy";
 import { fetchRoute, type RouteGeometry } from "@/lib/routing";
 import { useNavigate } from "react-router-dom";
 import { useWakeLock } from "@/hooks/useWakeLock";
-
-const DEFAULT_CENTER: [number, number] = [34.0522, -118.2437]; // LA
+import { useConvoyContext } from "@/contexts/ConvoyContext";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -36,19 +34,7 @@ const Index = () => {
       return () => clearTimeout(timer);
     }
   }, [isStandalone]);
-  const [center, setCenter] = useState<[number, number]>(DEFAULT_CENTER);
-  const hasSetInitialCenter = useRef(false);
-  const mapInstanceRef = useRef<L.Map | null>(null);
-  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
-  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][] | null>(null);
-  const [mapTheme, setMapTheme] = useState<"dark" | "light">(() => {
-    return (localStorage.getItem("convoy-map-theme") as "dark" | "light") || "dark";
-  });
-  const [routeLoading, setRouteLoading] = useState(false);
-  const [offRoute, setOffRoute] = useState(false);
-  const offRouteCounterRef = useRef(0);
-  const lastOffRouteCheckRef = useRef(0);
-
+  const { center, setCenter, ...convoy } = useConvoyContext();
   const {
     convoyCode,
     convoyId,
@@ -63,7 +49,18 @@ const Index = () => {
     handleLeave,
     handleSetDestination,
     handleClearDestination,
-  } = useConvoy(center);
+  } = convoy;
+  const hasSetInitialCenter = useRef(false);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
+  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][] | null>(null);
+  const [mapTheme, setMapTheme] = useState<"dark" | "light">(() => {
+    return (localStorage.getItem("convoy-map-theme") as "dark" | "light") || "dark";
+  });
+  const [routeLoading, setRouteLoading] = useState(false);
+  const [offRoute, setOffRoute] = useState(false);
+  const offRouteCounterRef = useRef(0);
+  const lastOffRouteCheckRef = useRef(0);
 
   const { hazards, addHazard, removeHazard } = useHazards(convoyId);
   const [showHazardPicker, setShowHazardPicker] = useState(false);
