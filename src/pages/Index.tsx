@@ -491,7 +491,7 @@ const Index = () => {
 
       {/* Bottom status bar - positioned above tab bar */}
       {convoyCode && (
-        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10 bg-card/90 backdrop-blur-xl border border-border rounded-full px-3 sm:px-5 py-2 sm:py-2.5 flex items-center gap-2 sm:gap-4 max-w-[90vw]">
+        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-10 bg-card/90 backdrop-blur-xl border border-border rounded-full px-3 sm:px-5 py-2 sm:py-2.5 flex items-center gap-2 sm:gap-4 max-w-[90vw]">
           <div className={`w-2 h-2 rounded-full ${gpsActive ? "bg-primary" : "bg-convoy-amber"} animate-pulse`} />
           <span className="font-display text-xs text-muted-foreground">
             {gpsActive ? "GPS LIVE" : "GPS PENDING"} • {drivers.length} vehicles tracked
