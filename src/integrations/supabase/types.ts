@@ -152,13 +152,53 @@ export type Database = {
           },
         ]
       }
+      convoy_route_points: {
+        Row: {
+          convoy_id: string
+          id: string
+          lat: number
+          lng: number
+          recorded_at: string
+          session_id: string
+          speed: number | null
+        }
+        Insert: {
+          convoy_id: string
+          id?: string
+          lat: number
+          lng: number
+          recorded_at?: string
+          session_id: string
+          speed?: number | null
+        }
+        Update: {
+          convoy_id?: string
+          id?: string
+          lat?: number
+          lng?: number
+          recorded_at?: string
+          session_id?: string
+          speed?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "convoy_route_points_convoy_id_fkey"
+            columns: ["convoy_id"]
+            isOneToOne: false
+            referencedRelation: "convoys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       convoy_trip_stats: {
         Row: {
           avg_speed: number
           convoy_id: string
           created_at: string
+          distance_km: number
           driver_color: string
           driver_name: string
+          duration_seconds: number
           fastest_acceleration: number
           hardest_brake: number
           id: string
@@ -170,8 +210,10 @@ export type Database = {
           avg_speed?: number
           convoy_id: string
           created_at?: string
+          distance_km?: number
           driver_color?: string
           driver_name: string
+          duration_seconds?: number
           fastest_acceleration?: number
           hardest_brake?: number
           id?: string
@@ -183,8 +225,10 @@ export type Database = {
           avg_speed?: number
           convoy_id?: string
           created_at?: string
+          distance_km?: number
           driver_color?: string
           driver_name?: string
+          duration_seconds?: number
           fastest_acceleration?: number
           hardest_brake?: number
           id?: string
