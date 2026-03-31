@@ -356,7 +356,7 @@ const Index = () => {
         hazards={mappedHazards}
         isLeader={isLeader}
         mapTheme={mapTheme}
-        bearing={mapBearing}
+        
         onMapReady={handleMapReady}
         onMapClick={stableOnMapClick}
         onHazardClick={handleHazardClick}
