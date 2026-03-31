@@ -60,6 +60,18 @@ const loadSession = (): SavedSession | null => {
 
 const generateSessionId = () => crypto.randomUUID();
 
+/** Try to get a fresh GPS position (timeout 3s), returns null on failure */
+const getFreshPosition = (): Promise<{ lat: number; lng: number } | null> =>
+  new Promise((resolve) => {
+    if (!navigator.geolocation) return resolve(null);
+    const timer = setTimeout(() => resolve(null), 3000);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { clearTimeout(timer); resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }); },
+      () => { clearTimeout(timer); resolve(null); },
+      { enableHighAccuracy: true, timeout: 3000, maximumAge: 5000 }
+    );
+  });
+
 export const useConvoy = (initialCenter: [number, number]) => {
   const [convoyCode, setConvoyCode] = useState<string | null>(null);
   const [convoyId, setConvoyId] = useState<string | null>(null);
@@ -338,6 +350,12 @@ export const useConvoy = (initialCenter: [number, number]) => {
       return;
     }
 
+    // Get fresh GPS position to avoid inserting default/stale coordinates
+    const freshPos = await getFreshPosition();
+    if (freshPos) {
+      latestPositionRef.current = { ...latestPositionRef.current, lat: freshPos.lat, lng: freshPos.lng };
+    }
+
     // Add self as leader
     const colorIdx = 0;
     const { error: memberError } = await supabase
@@ -392,6 +410,12 @@ export const useConvoy = (initialCenter: [number, number]) => {
       .eq("convoy_id", convoy.id);
 
     const colorIdx = Math.min((count || 0), DRIVER_COLORS.length - 1);
+
+    // Get fresh GPS position to avoid inserting default/stale coordinates
+    const freshPos = await getFreshPosition();
+    if (freshPos) {
+      latestPositionRef.current = { ...latestPositionRef.current, lat: freshPos.lat, lng: freshPos.lng };
+    }
 
     const { error: memberError } = await supabase
       .from("convoy_members")
