@@ -49,10 +49,8 @@ const TripStats = () => {
       setActiveConvoyId(session.convoyId);
       // Auto-select active convoy
       setSelectedTrip({ convoyId: session.convoyId, convoyCode: session.convoyCode, timestamp: new Date().toISOString() });
-    } else if (history.length > 0) {
-      // Select most recent trip
-      setSelectedTrip(history[0]);
     }
+    // Otherwise show the full trip list (no auto-select)
   }, []);
 
   // Fetch stats when selected trip changes
