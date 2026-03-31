@@ -352,6 +352,8 @@ const TripStats = () => {
         )}
       </div>
 
+      {showingAd && <AdInterstitial onComplete={onAdComplete} onSkip={onAdSkip} />}
+
       <BottomTabBar />
     </div>
   );
