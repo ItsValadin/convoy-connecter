@@ -3,6 +3,8 @@ import { Gauge, TrendingUp, TrendingDown, Activity, Crown, History, BarChart3, R
 import { supabase } from "@/integrations/supabase/client";
 import BottomTabBar from "@/components/BottomTabBar";
 import TripMapReplay from "@/components/TripMapReplay";
+import AdInterstitial from "@/components/AdInterstitial";
+import { useAdGate } from "@/hooks/useAdGate";
 
 interface StatRow {
   sessionId: string;
