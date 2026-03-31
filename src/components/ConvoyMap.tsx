@@ -132,7 +132,7 @@ const createHazardIcon = (hazardType: string) => {
   });
 };
 
-const LERP_DURATION = 1000; // 1 second interpolation
+const LERP_DURATION = 1500; // 1.5 second smooth interpolation
 
 const TILE_URLS: Record<MapTheme, string> = {
   dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
