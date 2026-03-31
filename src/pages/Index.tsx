@@ -137,14 +137,35 @@ const Index = () => {
     }
   }, [drivers, sessionId]);
 
-  // Follow mode: track user position continuously with heading rotation
+  // Follow mode: smoothly pan camera with forward-looking offset
+  const lastFollowPanRef = useRef(0);
   useEffect(() => {
     if (!followMode) return;
     const self = drivers.find((d) => d.id === sessionId);
     if (self && mapInstanceRef.current) {
-      // Use panTo without animation to avoid conflicting with ongoing flyTo
-      // This fires on every driver position update, so smooth animation isn't needed
-      mapInstanceRef.current.panTo([self.lat, self.lng], { animate: false });
+      const now = Date.now();
+      // Throttle camera pans to every 800ms for smoothness
+      if (now - lastFollowPanRef.current < 800) return;
+      lastFollowPanRef.current = now;
+
+      // Forward-looking: offset center ~120m ahead if we have heading & speed
+      const hasHeading = typeof self.heading === "number";
+      const hasSpeed = typeof self.speed === "number" && self.speed > 1; // >3.6 km/h
+      let targetLat = self.lat;
+      let targetLng = self.lng;
+
+      if (hasHeading && hasSpeed) {
+        const offsetM = Math.min(80 + self.speed! * 8, 250); // scale offset with speed
+        const headingRad = self.heading! * (Math.PI / 180);
+        targetLat += (offsetM / 111320) * Math.cos(headingRad);
+        targetLng += (offsetM / (111320 * Math.cos(self.lat * (Math.PI / 180)))) * Math.sin(headingRad);
+      }
+
+      mapInstanceRef.current.panTo([targetLat, targetLng], {
+        animate: true,
+        duration: 0.8,
+        easeLinearity: 0.4,
+      });
     }
   }, [followMode, drivers, sessionId]);
 
