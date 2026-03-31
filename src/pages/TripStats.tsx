@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Gauge, TrendingUp, TrendingDown, Activity, Crown, History, BarChart3 } from "lucide-react";
+import { Gauge, TrendingUp, TrendingDown, Activity, Crown, History, BarChart3, Route, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import BottomTabBar from "@/components/BottomTabBar";
+import TripMapReplay from "@/components/TripMapReplay";
 
 interface StatRow {
   sessionId: string;
@@ -11,6 +12,8 @@ interface StatRow {
   avgSpeed: number;
   fastestAcceleration: number;
   hardestBrake: number;
+  distanceKm: number;
+  durationSeconds: number;
 }
 
 interface TripRecord {
@@ -21,9 +24,18 @@ interface TripRecord {
 
 const TRIPS_STORAGE_KEY = "convoy-trip-history";
 
-const MS_TO_MPH = 2.237;
-const formatSpeed = (ms: number) => `${Math.round(ms * MS_TO_MPH)} mph`;
+const MS_TO_KMH = 3.6;
+const formatSpeed = (ms: number) => `${Math.round(ms * MS_TO_KMH)} km/h`;
 const formatAccel = (ms2: number) => `${ms2.toFixed(1)} m/s²`;
+const formatDistance = (km: number) => km >= 1 ? `${km.toFixed(1)} km` : `${Math.round(km * 1000)} m`;
+const formatDuration = (seconds: number) => {
+  if (seconds < 60) return `${seconds}s`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  if (m < 60) return `${m}m ${s}s`;
+  const h = Math.floor(m / 60);
+  return `${h}h ${m % 60}m`;
+};
 
 const loadTripHistory = (): TripRecord[] => {
   try {
@@ -42,18 +54,14 @@ const TripStats = () => {
     const history = loadTripHistory();
     setTrips(history);
 
-    // Check for active convoy
     const raw = localStorage.getItem("convoy-session");
     if (raw) {
       const session = JSON.parse(raw);
       setActiveConvoyId(session.convoyId);
-      // Auto-select active convoy
       setSelectedTrip({ convoyId: session.convoyId, convoyCode: session.convoyCode, timestamp: new Date().toISOString() });
     }
-    // Otherwise show the full trip list (no auto-select)
   }, []);
 
-  // Fetch stats when selected trip changes
   useEffect(() => {
     if (!selectedTrip) {
       setStats([]);
@@ -75,13 +83,14 @@ const TripStats = () => {
           avgSpeed: s.avg_speed,
           fastestAcceleration: s.fastest_acceleration,
           hardestBrake: s.hardest_brake,
+          distanceKm: s.distance_km,
+          durationSeconds: s.duration_seconds,
         })));
       }
     };
 
     fetchStats();
 
-    // Subscribe to realtime only for active convoy
     if (selectedTrip.convoyId === activeConvoyId) {
       const channel = supabase
         .channel(`trip-stats-page-${selectedTrip.convoyId}`)
@@ -99,6 +108,7 @@ const TripStats = () => {
   const bestTopSpeed = stats.length > 0 ? Math.max(...stats.map(s => s.topSpeed)) : 0;
   const bestAccel = stats.length > 0 ? Math.max(...stats.map(s => s.fastestAcceleration)) : 0;
   const bestBrake = stats.length > 0 ? Math.max(...stats.map(s => s.hardestBrake)) : 0;
+  const bestDistance = stats.length > 0 ? Math.max(...stats.map(s => s.distanceKm)) : 0;
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
@@ -125,7 +135,6 @@ const TripStats = () => {
                 : `${trips.length} past trip${trips.length !== 1 ? "s" : ""}`}
             </p>
           </div>
-          {/* Back to list button when viewing a trip */}
           {hasTripSelected && (
             <button
               onClick={() => setSelectedTrip(null)}
@@ -204,6 +213,18 @@ const TripStats = () => {
         {/* Stats detail view */}
         {hasTripSelected && stats.length > 0 && (
           <>
+            {/* Map replay */}
+            {selectedTrip && (
+              <TripMapReplay
+                convoyId={selectedTrip.convoyId}
+                drivers={stats.map((s) => ({
+                  sessionId: s.sessionId,
+                  driverName: s.driverName,
+                  driverColor: s.driverColor,
+                }))}
+              />
+            )}
+
             {stats.map((driver) => (
               <div
                 key={driver.sessionId}
@@ -218,64 +239,95 @@ const TripStats = () => {
                   <span className="font-display text-sm font-bold text-foreground flex-1">
                     {driver.driverName}
                   </span>
+                  {/* Summary badges */}
+                  <span className="text-[10px] font-display text-muted-foreground">
+                    {formatDistance(driver.distanceKm)} · {formatDuration(driver.durationSeconds)}
+                  </span>
                 </div>
 
                 {/* Stats grid */}
-                <div className="grid grid-cols-2 gap-px bg-border">
-                  <div className="bg-card p-4 flex flex-col gap-1">
-                    <div className="flex items-center gap-1.5">
-                      <Gauge className="w-3.5 h-3.5 text-primary" />
-                      <span className="font-display text-[10px] uppercase tracking-widest text-muted-foreground">
+                <div className="grid grid-cols-3 gap-px bg-border">
+                  <div className="bg-card p-3 flex flex-col gap-1">
+                    <div className="flex items-center gap-1">
+                      <Gauge className="w-3 h-3 text-primary" />
+                      <span className="font-display text-[9px] uppercase tracking-widest text-muted-foreground">
                         Top Speed
                       </span>
                       {driver.topSpeed === bestTopSpeed && driver.topSpeed > 0 && (
-                        <Crown className="w-3 h-3 text-convoy-amber" />
+                        <Crown className="w-2.5 h-2.5 text-convoy-amber" />
                       )}
                     </div>
-                    <span className="font-display text-2xl font-bold text-foreground">
+                    <span className="font-display text-lg font-bold text-foreground">
                       {formatSpeed(driver.topSpeed)}
                     </span>
                   </div>
 
-                  <div className="bg-card p-4 flex flex-col gap-1">
-                    <div className="flex items-center gap-1.5">
-                      <Activity className="w-3.5 h-3.5 text-accent" />
-                      <span className="font-display text-[10px] uppercase tracking-widest text-muted-foreground">
+                  <div className="bg-card p-3 flex flex-col gap-1">
+                    <div className="flex items-center gap-1">
+                      <Activity className="w-3 h-3 text-accent" />
+                      <span className="font-display text-[9px] uppercase tracking-widest text-muted-foreground">
                         Avg Speed
                       </span>
                     </div>
-                    <span className="font-display text-2xl font-bold text-foreground">
+                    <span className="font-display text-lg font-bold text-foreground">
                       {formatSpeed(driver.avgSpeed)}
                     </span>
                   </div>
 
-                  <div className="bg-card p-4 flex flex-col gap-1">
-                    <div className="flex items-center gap-1.5">
-                      <TrendingUp className="w-3.5 h-3.5 text-primary" />
-                      <span className="font-display text-[10px] uppercase tracking-widest text-muted-foreground">
-                        Best Accel
+                  <div className="bg-card p-3 flex flex-col gap-1">
+                    <div className="flex items-center gap-1">
+                      <Route className="w-3 h-3 text-primary" />
+                      <span className="font-display text-[9px] uppercase tracking-widest text-muted-foreground">
+                        Distance
                       </span>
-                      {driver.fastestAcceleration === bestAccel && driver.fastestAcceleration > 0 && (
-                        <Crown className="w-3 h-3 text-convoy-amber" />
+                      {driver.distanceKm === bestDistance && driver.distanceKm > 0 && (
+                        <Crown className="w-2.5 h-2.5 text-convoy-amber" />
                       )}
                     </div>
-                    <span className="font-display text-2xl font-bold text-foreground">
+                    <span className="font-display text-lg font-bold text-foreground">
+                      {formatDistance(driver.distanceKm)}
+                    </span>
+                  </div>
+
+                  <div className="bg-card p-3 flex flex-col gap-1">
+                    <div className="flex items-center gap-1">
+                      <TrendingUp className="w-3 h-3 text-primary" />
+                      <span className="font-display text-[9px] uppercase tracking-widest text-muted-foreground">
+                        Accel
+                      </span>
+                      {driver.fastestAcceleration === bestAccel && driver.fastestAcceleration > 0 && (
+                        <Crown className="w-2.5 h-2.5 text-convoy-amber" />
+                      )}
+                    </div>
+                    <span className="font-display text-lg font-bold text-foreground">
                       {formatAccel(driver.fastestAcceleration)}
                     </span>
                   </div>
 
-                  <div className="bg-card p-4 flex flex-col gap-1">
-                    <div className="flex items-center gap-1.5">
-                      <TrendingDown className="w-3.5 h-3.5 text-destructive" />
-                      <span className="font-display text-[10px] uppercase tracking-widest text-muted-foreground">
-                        Hard Brake
+                  <div className="bg-card p-3 flex flex-col gap-1">
+                    <div className="flex items-center gap-1">
+                      <TrendingDown className="w-3 h-3 text-destructive" />
+                      <span className="font-display text-[9px] uppercase tracking-widest text-muted-foreground">
+                        Brake
                       </span>
                       {driver.hardestBrake === bestBrake && driver.hardestBrake > 0 && (
-                        <Crown className="w-3 h-3 text-convoy-amber" />
+                        <Crown className="w-2.5 h-2.5 text-convoy-amber" />
                       )}
                     </div>
-                    <span className="font-display text-2xl font-bold text-foreground">
+                    <span className="font-display text-lg font-bold text-foreground">
                       {formatAccel(driver.hardestBrake)}
+                    </span>
+                  </div>
+
+                  <div className="bg-card p-3 flex flex-col gap-1">
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-accent" />
+                      <span className="font-display text-[9px] uppercase tracking-widest text-muted-foreground">
+                        Duration
+                      </span>
+                    </div>
+                    <span className="font-display text-lg font-bold text-foreground">
+                      {formatDuration(driver.durationSeconds)}
                     </span>
                   </div>
                 </div>
